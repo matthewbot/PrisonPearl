@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,9 +14,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -183,15 +187,28 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		PrisonPearl pp = pearlstorage.imprison(tag.getTaggerPlayer(), tag.getTaggedPlayer()); // create the prison pearl
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
 	
-	    //player.setBedSpawnLocation(null); // clear the players spawn location
+	    player.setBedSpawnLocation(Bukkit.getWorlds().get(0).getSpawnLocation()); // reset the player's normal spawn location
 	}
 	
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onItemDespawn(ItemDespawnEvent event) {
+		ItemStack item = event.getEntity().getItemStack();
+		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+			return;
+		
+		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		pearlstorage.free(pp, event.getEntity().getLocation());
+	}
+	
+	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
 		Player player = event.getPlayer();
 		if (pearlstorage.getByImprisoned(player) != null) {
 			player.sendMessage("Your prison pearl has bound you to this bleak and endless world");
 			event.setRespawnLocation(prisonlocation);
+		} else if (event.getRespawnLocation().getWorld() == prisonlocation) {
+			event.setRespawnLocation(Bukkit.getWorlds().get(0).getSpawnLocation());
+			player.sendMessage("You've been freed!");
 		}
 	}
 	
@@ -206,6 +223,31 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (damager.getItemInHand().getType() == Material.ENDER_PEARL) {
 			taglist.tag(player, damager);
 		}
+	}
+	
+	@EventHandler(priority=EventPriority.LOW)
+	public void onPlayerInteract(PlayerInteractEvent event) {
+		Player player = event.getPlayer();
+		ItemStack item = event.getItem();
+		if (item == null || item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+			return;
+		
+		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		if (pp == null)
+			return;
+		
+		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+			Material m = event.getClickedBlock().getType();
+			if (m == Material.CHEST || m == Material.WORKBENCH || m == Material.FURNACE || m == Material.DISPENSER || m == Material.BREWING_STAND) {
+				return;
+			}
+		} else if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+			return;
+		}
+		
+		pearlstorage.free(pp, player.getLocation());
+		player.getInventory().setItemInHand(null);
+		event.setCancelled(true);
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -235,11 +277,18 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (player == null) // player not online?
 			return; // gets no intel then
 		
-		if (event.getType() == PrisonPearlEvent.Type.HELD) {
+		switch (event.getType()) {
+		case HELD:
 			String world = pp.getHolderLocation().getWorld().getName();
 			Vector vec = pp.getHolderLocation().toVector();
 			String vecstr = vec.getBlockX() + " " + vec.getBlockY() + " " + vec.getBlockZ();
 			player.sendMessage("Your prison pearl is now held by " + pp.getHolderName() + " at " + world + " " + vecstr);
+			break;
+			
+		case FREED:
+			player.sendMessage("You've been freed!");
+			player.teleport(event.getLocation());
+			break;
 		}
 	}
 }

@@ -24,13 +24,6 @@ public class PrisonPearl {
 		return id;
 	}
 	
-	public void invalidate() {
-		id = -1;
-		imprisonedname = null;
-		holder = null;
-		holder = null;
-	}
-	
 	public boolean isValid() {
 		return id != -1;
 	}

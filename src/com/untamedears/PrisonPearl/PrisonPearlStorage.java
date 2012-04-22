@@ -73,10 +73,9 @@ public class PrisonPearlStorage {
 		return pp;
 	}
 	
-	public void free(PrisonPearl pp) {
+	public void free(PrisonPearl pp, Location loc) {
 		remove(pp);
-		pearlEvent(pp, PrisonPearlEvent.Type.FREED);
-		pp.invalidate();
+		pearlEvent(pp, PrisonPearlEvent.Type.FREED, loc);
 	}
 	
 	public PrisonPearl getByID(short id) {
@@ -103,5 +102,9 @@ public class PrisonPearlStorage {
 	
 	private void pearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type) {
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, type));
+	}
+	
+	private void pearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type, Location loc) {
+		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, type, loc));
 	}
 }
