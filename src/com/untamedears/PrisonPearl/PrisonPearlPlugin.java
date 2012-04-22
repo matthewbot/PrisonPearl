@@ -71,6 +71,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	
 	public void onDisable() {
 		try {
+			File file = getPrisonPearlsFile();
+			if (file.exists())
+				file.renameTo(new File(file.getAbsolutePath() + ".bak"));
 			pearlstorage.save(getPrisonPearlsFile());
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to save prison pearls to " + getPrisonPearlsFile().getAbsolutePath(), e);
