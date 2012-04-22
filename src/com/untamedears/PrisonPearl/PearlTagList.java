@@ -39,9 +39,8 @@ public class PearlTagList implements Runnable {
 		tags.add(tag);
 		tagEvent(tag, PearlTagEvent.Type.NEW);
 		
-		// schedule the expire task if this is the first tag
-		if (tags.size() == 1)
-			scheduleExpireTask();
+		// schedule the expire task
+		scheduleExpireTask();
 	}
 	
 	public PearlTag taggedKilled(Player taggedplayer) {
@@ -87,7 +86,7 @@ public class PearlTagList implements Runnable {
 	}
 	
 	private void scheduleExpireTask() {
-		if (scheduled || tags.size() > 0)
+		if (scheduled || tags.size() == 0)
 			return;
 		
 		long remaining = tags.get(0).getTicksRemaining(getNowTick());
