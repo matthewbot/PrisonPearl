@@ -11,23 +11,35 @@ import org.bukkit.plugin.Plugin;
 public class PearlTagList implements Runnable {
 	private Plugin plugin;
 	private long expiresticks;
-	
+	private boolean scheduled;
 	private List<PearlTag> tags;
 	
 	public PearlTagList(Plugin plugin, long expiresticks) {
 		this.plugin = plugin;
 		this.expiresticks = expiresticks;
-		
+		scheduled = false;
 		tags = new ArrayList<PearlTag>();
 	}
 	
-	public void tag(Player taggedplayer, Player taggerplayer) {	
+	public void tag(Player taggedplayer, Player taggerplayer) {
+		// first, generate a tag switch event if this person is being re-tagged by someone else
+		Iterator<PearlTag> i = tags.iterator();
+		while (i.hasNext()) {
+			PearlTag tag = i.next();
+			if (tag.getTaggedPlayer() == taggedplayer) {
+				i.remove();
+				tagEvent(tag, PearlTagEvent.Type.SWITCHED, taggerplayer);
+				break;
+			}
+		}
+		
+		// then, make the tag and generate a new tag event
 		long expires = getNowTick() + expiresticks;
 		PearlTag tag = new PearlTag(taggedplayer, taggerplayer, expires);
 		tags.add(tag);
-		
 		tagEvent(tag, PearlTagEvent.Type.NEW);
 		
+		// schedule the expire task if this is the first tag
 		if (tags.size() == 1)
 			scheduleExpireTask();
 	}
@@ -58,6 +70,7 @@ public class PearlTagList implements Runnable {
 	}
 	
 	public void run() {
+		scheduled = false;
 		long nowtick = getNowTick();
 		Iterator<PearlTag> i = tags.iterator();
 		
@@ -74,11 +87,12 @@ public class PearlTagList implements Runnable {
 	}
 	
 	private void scheduleExpireTask() {
-		if (tags.size() == 0)
+		if (scheduled)
 			return;
 		
 		long remaining = tags.get(0).getTicksRemaining(getNowTick());
 		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, this, remaining+1);
+		scheduled = true;
 	}
 	
 	private long getNowTick() {
@@ -86,6 +100,10 @@ public class PearlTagList implements Runnable {
 	}
 	
 	private void tagEvent(PearlTag tag, PearlTagEvent.Type type) {
-		Bukkit.getPluginManager().callEvent(new PearlTagEvent(tag, type));
+		Bukkit.getPluginManager().callEvent(new PearlTagEvent(tag, type, null));
+	}
+	
+	private void tagEvent(PearlTag tag, PearlTagEvent.Type type, Player other) {
+		Bukkit.getPluginManager().callEvent(new PearlTagEvent(tag, type, other));
 	}
 }

@@ -88,6 +88,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	public void onPearlTagEvent(PearlTagEvent event) {
 		Player tagger = event.getTag().getTaggerPlayer();
 		Player tagged = event.getTag().getTaggedPlayer();
+		Player other = event.getOtherPlayer();
 		
 		if (event.getType() == PearlTagEvent.Type.NEW) {
 			tagger.sendMessage("You've tagged " + tagged.getDisplayName());
@@ -95,6 +96,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		} else if (event.getType() == PearlTagEvent.Type.EXPIRED) {
 			tagger.sendMessage("Your tag expired for " + tagged.getDisplayName());
 			tagged.sendMessage("You are no longer tagged by " + tagger.getDisplayName());
+		} else if (event.getType() == PearlTagEvent.Type.SWITCHED) {
+			tagger.sendMessage("Your tag for " + tagged.getDisplayName() + " was switched to " + other.getDisplayName());
 		}
 	}
 }

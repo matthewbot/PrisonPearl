@@ -1,17 +1,20 @@
 package com.untamedears.PrisonPearl;
 
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 public class PearlTagEvent extends Event {
-	public enum Type { NEW, EXPIRED, IMPRISONED };
+	public enum Type { NEW, EXPIRED, SWITCHED, IMPRISONED };
 	
 	private PearlTag tag;
 	private Type type;
+	private Player other;
 	
-	public PearlTagEvent(PearlTag tag, Type type) {
+	public PearlTagEvent(PearlTag tag, Type type, Player other) {
 		this.tag = tag;
 		this.type = type;
+		this.other = other;
 	}
 	
 	public PearlTag getTag() {
@@ -20,6 +23,10 @@ public class PearlTagEvent extends Event {
 	
 	public Type getType() {
 		return type;
+	}
+	
+	public Player getOtherPlayer() {
+		return other;
 	}
 	
 	private static final HandlerList handlers = new HandlerList();
