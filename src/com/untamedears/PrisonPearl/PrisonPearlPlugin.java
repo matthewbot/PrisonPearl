@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
@@ -28,6 +29,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -152,6 +154,21 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		taglist.taggerExpired(event.getPlayer());
+		
+		Inventory inv = event.getPlayer().getInventory();
+		for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+			int slot = entry.getKey();
+			ItemStack item = entry.getValue();
+			if (item.getDurability() == 0)
+				continue;
+			
+			PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+			if (pp == null)
+				continue;
+			
+			pearlstorage.free(pp, event.getPlayer().getLocation());
+			inv.setItem(slot, null);
+		}
 	}
 	
 	@EventHandler(priority=EventPriority.HIGH)
