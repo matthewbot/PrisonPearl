@@ -44,18 +44,18 @@ public class PearlTagList implements Runnable {
 			scheduleExpireTask();
 	}
 	
-	public boolean taggedImprisoned(Player taggedplayer) {
+	public PearlTag taggedKilled(Player taggedplayer) {
 		Iterator<PearlTag> i = tags.iterator();
 		while (i.hasNext()) {
 			PearlTag tag = i.next();
 			if (tag.getTaggedPlayer() == taggedplayer) {
 				i.remove();
-				tagEvent(tag, PearlTagEvent.Type.IMPRISONED);
-				return true;
+				tagEvent(tag, PearlTagEvent.Type.KILLED);
+				return tag;
 			}
 		}
 		
-		return false;
+		return null;
 	}
 	
 	public void taggerExpired(Player tagger) {
@@ -87,7 +87,7 @@ public class PearlTagList implements Runnable {
 	}
 	
 	private void scheduleExpireTask() {
-		if (scheduled)
+		if (scheduled || tags.size() > 0)
 			return;
 		
 		long remaining = tags.get(0).getTicksRemaining(getNowTick());
