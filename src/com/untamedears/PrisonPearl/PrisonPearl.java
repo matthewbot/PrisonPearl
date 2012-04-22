@@ -2,39 +2,22 @@ package com.untamedears.PrisonPearl;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.DoubleChest;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.StorageMinecart;
+import org.bukkit.inventory.InventoryHolder;
 
 public class PrisonPearl {
 	private short id;
 	private String imprisonedname;
-	private Player holder;
-	private Location storedat;
+	private InventoryHolder holder;
 	
-	public PrisonPearl(short id, String imprisonedname, Player holder) {
+	public PrisonPearl(short id, String imprisonedname, InventoryHolder holder) {
 		this.id = id;
 		this.imprisonedname = imprisonedname;
 		this.holder = holder;
-	}
-	
-	public PrisonPearl(short id, String imprisonedname, Location storedat) {
-		this.id = id;
-		this.imprisonedname = imprisonedname;
-		this.storedat = storedat;
-	}
-	
-	public PrisonPearl(String datastring) {
-		String[] parts = datastring.split(" "); // id imprisoned worldname x y z
-		
-		id = Short.parseShort(parts[0]);
-		imprisonedname = parts[1];
-		storedat = new Location(Bukkit.getServer().getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
-	}
-	
-	public String toDataString() {
-		if (holder != null)
-			throw new RuntimeException("PlayerPearl held by a player can't be turned into a datastring!");
-
-		return id + " " + imprisonedname + " " + storedat.getWorld().getName() + " " + storedat.getBlockX() + " " + storedat.getBlockY() + " " + storedat.getBlockZ();
 	}
 	
 	public short getID() {
@@ -45,21 +28,11 @@ public class PrisonPearl {
 		id = -1;
 		imprisonedname = null;
 		holder = null;
-		storedat = null;
+		holder = null;
 	}
 	
 	public boolean isValid() {
 		return id != -1;
-	}
-	
-	public Location getLocation() {
-		if (holder != null) {
-			return holder.getLocation();
-		} else if (storedat != null) {
-			return storedat;
-		} else {
-			return null;
-		}
 	}
 	
 	public String getImprisonedName() {
@@ -70,28 +43,68 @@ public class PrisonPearl {
 		return Bukkit.getPlayerExact(imprisonedname);
 	}
 	
-	public Player getHolder() {
+	public InventoryHolder getHolder() {
 		return holder;
 	}
 	
-	public boolean isHeld() {
-		return holder != null;
+	public Entity getHolderEntity() {
+		if (holder instanceof Entity)
+			return (Entity)holder;
+		else
+			return null;
 	}
 	
-	public boolean isStored() {
-		return storedat != null;
+	public BlockState getHolderBlockState() {
+		if (holder instanceof BlockState) {
+			return (BlockState)holder;
+		} else if (holder instanceof DoubleChest) {
+			return (BlockState)((DoubleChest)holder).getLeftSide();
+		} else {
+			return null;
+		}
 	}
 	
-	public void storeAt(Location loc) {
-		holder = null;
-		storedat = loc;
-		
-		pearlEvent(this, PrisonPearlEvent.Type.STORED);
+	public Location getHolderLocation() {
+		if (holder instanceof Entity) {
+			return ((Entity)holder).getLocation();
+		} else if (holder instanceof BlockState) {
+			return ((BlockState)holder).getLocation();
+		} else if (holder instanceof DoubleChest) {
+			return ((DoubleChest)holder).getLocation();
+		} else {
+			return null; // TODO log these 
+		}
 	}
 	
-	public void pickupBy(Player player) {	
-		storedat = null;
-		holder = player;
+	public String getHolderName() {
+		Entity entity;
+		BlockState state;
+		if ((entity = getHolderEntity()) != null) {
+			if (entity instanceof Player) {
+				return ((Player)entity).getDisplayName();
+			} else if (entity instanceof StorageMinecart) {
+				return "a storage minecart";
+			} else {
+				return "an unknown entity"; // TODO log these
+			}
+		} else if ((state = getHolderBlockState()) != null) {
+			switch (state.getType()) {
+			case CHEST:
+				return "a chest";
+			case FURNACE:
+				return "a furnace";
+			case BREWING_STAND:
+				return "a brewing stand";
+			default:
+				return "an unknown block"; // TODO log these
+			}
+		} else {
+			return null; // TODO log these (really shouldn't happen)
+		}
+	}
+	
+	public void setHolder(InventoryHolder holder) {
+		this.holder = holder;
 		
 		pearlEvent(this, PrisonPearlEvent.Type.HELD);
 	}

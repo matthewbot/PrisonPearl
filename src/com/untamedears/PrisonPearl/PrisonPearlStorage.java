@@ -12,7 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.InventoryHolder;
 
 public class PrisonPearlStorage {
 	private Map<Short, PrisonPearl> pearls_byid;
@@ -31,7 +34,15 @@ public class PrisonPearlStorage {
 		
 		String line;
 		while ((line = br.readLine()) != null) {
-			PrisonPearl pp = new PrisonPearl(line);
+			String parts[] = line.split(" ");
+			short id = Short.parseShort(parts[0]);
+			String imprisoned = parts[1];
+			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
+			BlockState block = loc.getBlock().getState();
+			if (!(block instanceof InventoryHolder))
+				continue;
+			
+			PrisonPearl pp = new PrisonPearl(id, imprisoned, (InventoryHolder)block);
 			put(pp);
 			nextid = (short)(pp.getID()+1);
 		}
@@ -44,10 +55,11 @@ public class PrisonPearlStorage {
 		BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fos));
 	
 		for (PrisonPearl pp : pearls_byid.values()) {
-			if (!pp.isStored())
+			if (pp.getHolderBlockState() == null)
 				continue;
 			
-			br.append(pp.toDataString() + "\n");
+			Location loc = pp.getHolderLocation();
+			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
 		}
 		
 		br.flush();

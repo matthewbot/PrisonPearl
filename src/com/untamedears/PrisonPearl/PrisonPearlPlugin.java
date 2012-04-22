@@ -1,5 +1,8 @@
 package com.untamedears.PrisonPearl;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -12,9 +15,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,6 +35,24 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		taglist = new PearlTagList(this, 20*10);
 		pearlstorage = new PrisonPearlStorage();
 		
+		File ppfile = getPrisonPearlsFile();
+		try {
+			pearlstorage.load(ppfile);
+		} catch (FileNotFoundException e) {
+			System.out.println("Prison pearls data file does not exist, creating.");
+			if (!ppfile.getParentFile().mkdirs()) {
+				throw new RuntimeException("Failed to create directory " + ppfile.getParentFile().getAbsolutePath());
+			}
+			
+			try {
+				ppfile.createNewFile();
+			} catch (IOException e2) {
+				throw new RuntimeException("Failed to create " + ppfile.getAbsolutePath(), e2);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to load prison pearls from " + ppfile.getAbsolutePath(), e);
+		}
+			
 		List<World> worlds = getServer().getWorlds();
 		prisonlocation = worlds.get(worlds.size()-1).getSpawnLocation();
 		
@@ -43,6 +67,18 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 		
 		getServer().getPluginManager().registerEvents(this, this);
+	}
+	
+	public void onDisable() {
+		try {
+			pearlstorage.save(getPrisonPearlsFile());
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to save prison pearls to " + getPrisonPearlsFile().getAbsolutePath(), e);
+		}
+	}
+	
+	private File getPrisonPearlsFile() {
+		return new File(getDataFolder(), "prisonpearls.txt");
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -62,6 +98,32 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 				player.getInventory().setItem(event.getNewSlot(), item);	
 			}
 		}
+	}
+	
+	@EventHandler(priority=EventPriority.NORMAL)
+	public void onInventoryClick(InventoryClickEvent event) {
+		ItemStack item = event.getCursor();
+		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+			return;
+		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		if (pp == null) {
+			item.setDurability((short)0);
+			event.setCurrentItem(item);
+			return;
+		}
+		
+		InventoryView view = event.getView();
+		int rawslot = event.getRawSlot();
+		int slot = view.convertSlot(rawslot);
+		InventoryHolder holder;
+		if (slot == rawslot) { // in top inventory
+			holder = view.getTopInventory().getHolder();
+		} else {
+			holder = view.getBottomInventory().getHolder();
+		}
+		
+		System.out.println("New holder " + holder);
+		pp.setHolder(holder);
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -107,7 +169,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		PrisonPearl pp = pearlstorage.imprison(tag.getTaggerPlayer(), tag.getTaggedPlayer()); // create the prison pearl
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
 	
-	    player.setBedSpawnLocation(null); // clear the players spawn location
+	    //player.setBedSpawnLocation(null); // clear the players spawn location
 	}
 	
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -160,9 +222,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			return; // gets no intel then
 		
 		if (event.getType() == PrisonPearlEvent.Type.HELD) {
-			pp.getImprisonedPlayer().sendMessage(pp.getHolder().getDisplayName() + " now holds your prison pearl");
-		} else if (event.getType() == PrisonPearlEvent.Type.STORED) {
-			pp.getImprisonedPlayer().sendMessage("Your prison pearl is now stored at " + pp.getLocation());
+			player.sendMessage("Your prison pearl is now held by " + pp.getHolderName() + " at " + pp.getHolderLocation());
 		}
 	}
 }
