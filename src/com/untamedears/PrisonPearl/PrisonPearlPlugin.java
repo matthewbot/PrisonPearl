@@ -24,6 +24,7 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private PearlTagList taglist;
@@ -105,27 +106,37 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	
 	@EventHandler(priority=EventPriority.NORMAL)
 	public void onInventoryClick(InventoryClickEvent event) {
+		ItemStack clicked = event.getCurrentItem();
+		if (clicked != null && clicked.getType() == Material.ENDER_PEARL && clicked.getDurability() != 0) {
+			PrisonPearl pp = pearlstorage.getByID(clicked.getDurability());
+			if (pp == null) {
+				clicked.setDurability((short)0);
+				event.setCurrentItem(clicked);
+			} else {
+				if (event.getWhoClicked() instanceof Player)
+					((Player)event.getWhoClicked()).sendMessage("Prison Pearl - " + pp.getImprisonedName());
+			}
+		}
+		
 		ItemStack item = event.getCursor();
 		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
 			return;
 		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
 		if (pp == null) {
 			item.setDurability((short)0);
-			event.setCurrentItem(item);
+			event.setCursor(item);
 			return;
 		}
 		
 		InventoryView view = event.getView();
 		int rawslot = event.getRawSlot();
-		int slot = view.convertSlot(rawslot);
 		InventoryHolder holder;
-		if (slot == rawslot) { // in top inventory
+		if (view.convertSlot(rawslot) == rawslot) { // this means in the top inventory
 			holder = view.getTopInventory().getHolder();
 		} else {
 			holder = view.getBottomInventory().getHolder();
 		}
 		
-		System.out.println("New holder " + holder);
 		pp.setHolder(holder);
 	}
 	
@@ -225,7 +236,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			return; // gets no intel then
 		
 		if (event.getType() == PrisonPearlEvent.Type.HELD) {
-			player.sendMessage("Your prison pearl is now held by " + pp.getHolderName() + " at " + pp.getHolderLocation());
+			String world = pp.getHolderLocation().getWorld().getName();
+			Vector vec = pp.getHolderLocation().toVector();
+			String vecstr = vec.getBlockX() + " " + vec.getBlockY() + " " + vec.getBlockZ();
+			player.sendMessage("Your prison pearl is now held by " + pp.getHolderName() + " at " + world + " " + vecstr);
 		}
 	}
 }
