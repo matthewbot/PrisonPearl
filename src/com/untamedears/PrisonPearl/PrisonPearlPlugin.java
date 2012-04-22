@@ -120,24 +120,18 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		ItemStack clicked = event.getCurrentItem();
 		if (clicked != null && clicked.getType() == Material.ENDER_PEARL && clicked.getDurability() != 0) {
 			PrisonPearl pp = pearlstorage.getByID(clicked.getDurability());
-			if (pp == null) {
-				clicked.setDurability((short)0);
-				event.setCurrentItem(clicked);
-			} else {
+			if (pp != null) {
 				if (event.getWhoClicked() instanceof Player)
 					((Player)event.getWhoClicked()).sendMessage("Prison Pearl - " + pp.getImprisonedName());
+			} else {
+				clicked.setDurability((short)0);
+				event.setCurrentItem(clicked);
 			}
 		}
 
-		ItemStack item = event.getCursor();
-		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+		PrisonPearl pp = pearlstorage.getByItemStack(event.getCursor());
+		if (pp == null)
 			return;
-		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
-		if (pp == null) {
-			item.setDurability((short)0);
-			event.setCursor(item);
-			return;
-		}
 
 		InventoryView view = event.getView();
 		int rawslot = event.getRawSlot();
@@ -163,11 +157,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		Inventory inv = event.getPlayer().getInventory();
 		for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
 			int slot = entry.getKey();
-			ItemStack item = entry.getValue();
-			if (item.getDurability() == 0)
-				continue;
-
-			PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+			PrisonPearl pp = pearlstorage.getByItemStack(entry.getValue());
 			if (pp == null)
 				continue;
 
@@ -194,11 +184,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onItemDespawn(ItemDespawnEvent event) {
-		ItemStack item = event.getEntity().getItemStack();
-		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
-			return;
-
-		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		PrisonPearl pp = pearlstorage.getByItemStack(event.getEntity().getItemStack());
 		if (pp == null)
 			return;
 
@@ -211,11 +197,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			if (!(e instanceof Item))
 				continue;
 
-			ItemStack item = ((Item)e).getItemStack();
-			if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
-				continue;
-
-			final PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+			final PrisonPearl pp = pearlstorage.getByItemStack(((Item)e).getItemStack());
 			if (pp == null)
 				continue;
 
@@ -259,12 +241,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 
 	@EventHandler(priority=EventPriority.LOW)
 	public void onPlayerInteract(PlayerInteractEvent event) {
-		Player player = event.getPlayer();
-		ItemStack item = event.getItem();
-		if (item == null || item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
-			return;
-
-		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		PrisonPearl pp = pearlstorage.getByItemStack(event.getItem());
 		if (pp == null)
 			return;
 
@@ -277,6 +254,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			return;
 		}
 
+		Player player = event.getPlayer();
 		pearlstorage.free(pp, player.getLocation());
 		player.getInventory().setItemInHand(null);
 		event.setCancelled(true);
@@ -287,11 +265,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (!(event.getEntity() instanceof Item))
 			return;
 
-		ItemStack item = ((Item)event.getEntity()).getItemStack();
-		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
-			return;
-
-		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		PrisonPearl pp = pearlstorage.getByItemStack(((Item)event.getEntity()).getItemStack());
 		if (pp == null)
 			return;
 

@@ -13,9 +13,11 @@ import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 
 public class PrisonPearlStorage {
 	private Map<Short, PrisonPearl> pearls_byid;
@@ -80,6 +82,13 @@ public class PrisonPearlStorage {
 	
 	public PrisonPearl getByID(short id) {
 		return pearls_byid.get(id);
+	}
+	
+	public PrisonPearl getByItemStack(ItemStack item) {
+		if (item == null || item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+			return null;
+		else
+			return pearls_byid.get(item.getDurability());
 	}
 	
 	public PrisonPearl getByImprisoned(String name) {
