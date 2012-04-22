@@ -5,16 +5,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
@@ -23,6 +27,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -197,7 +202,37 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			return;
 		
 		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		if (pp == null)
+			return;
+		
 		pearlstorage.free(pp, event.getEntity().getLocation());
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onChunkUnload(ChunkUnloadEvent event) {
+		for (Entity e : event.getChunk().getEntities()) {
+			if (!(e instanceof Item))
+				continue;
+			
+			ItemStack item = ((Item)e).getItemStack();
+			if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+				continue;
+			
+			final PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+			if (pp == null)
+				continue;
+			
+			final Entity entity = e;
+			Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() { // doing this in onChunkUnload causes weird things to happen
+				public Void call() throws Exception {
+					pearlstorage.free(pp, entity.getLocation());
+					entity.remove();
+					return null;
+				}	
+			});
+			
+			event.setCancelled(true);
+		}
 	}
 	
 	@EventHandler(priority=EventPriority.HIGHEST)
@@ -248,6 +283,22 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		pearlstorage.free(pp, player.getLocation());
 		player.getInventory().setItemInHand(null);
 		event.setCancelled(true);
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onEntityCombustEvent(EntityCombustEvent event) {
+		if (!(event.getEntity() instanceof Item))
+			return;
+		
+		ItemStack item = ((Item)event.getEntity()).getItemStack();
+		if (item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
+			return;
+		
+		PrisonPearl pp = pearlstorage.getByID(item.getDurability());
+		if (pp == null)
+			return;
+		
+		pearlstorage.free(pp, event.getEntity().getLocation());
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
