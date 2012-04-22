@@ -2,7 +2,6 @@ package com.untamedears.PrisonPearl;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
 public class PrisonPearl {
@@ -34,8 +33,8 @@ public class PrisonPearl {
 	public String toDataString() {
 		if (holder != null)
 			throw new RuntimeException("PlayerPearl held by a player can't be turned into a datastring!");
-		Location loc = storedat;
-		return id + " " + imprisonedname + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
+
+		return id + " " + imprisonedname + " " + storedat.getWorld().getName() + " " + storedat.getBlockX() + " " + storedat.getBlockY() + " " + storedat.getBlockZ();
 	}
 	
 	public short getID() {
@@ -83,7 +82,7 @@ public class PrisonPearl {
 		return storedat != null;
 	}
 	
-	public void storeAt(Location loc, Server server) {
+	public void storeAt(Location loc) {
 		holder = null;
 		storedat = loc;
 		
