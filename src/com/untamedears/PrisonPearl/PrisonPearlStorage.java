@@ -66,7 +66,7 @@ public class PrisonPearlStorage {
 		fos.close();
 	}
 	
-	public PrisonPearl imprison(Player imprisoner, Player imprisoned) {
+	public PrisonPearl imprison(Player imprisoned, Player imprisoner) {
 		PrisonPearl pp = new PrisonPearl(nextid++, imprisoned.getName(), imprisoner);
 		put(pp);
 		pearlEvent(pp, PrisonPearlEvent.Type.NEW);
