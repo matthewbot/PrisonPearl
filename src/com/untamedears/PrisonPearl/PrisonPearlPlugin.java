@@ -8,8 +8,12 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -39,7 +43,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
-public class PrisonPearlPlugin extends JavaPlugin implements Listener {
+public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandExecutor {
 	private PearlTagList taglist;
 	private PrisonPearlStorage pearlstorage;
 
@@ -78,12 +82,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 
 		getServer().getPluginManager().registerEvents(this, this);
-		
-		PrisonPearlCommandExecutor cmdex = new PrisonPearlCommandExecutor(pearlstorage);
-		getCommand("pplocate").setExecutor(cmdex);
-		getCommand("pplocateany").setExecutor(cmdex);
-		getCommand("ppfree").setExecutor(cmdex);
-		getCommand("ppfreeany").setExecutor(cmdex);
+		getCommand("pplocate").setExecutor(this);
+		getCommand("pplocateany").setExecutor(this);
+		getCommand("ppfree").setExecutor(this);
+		getCommand("ppfreeany").setExecutor(this);
 	}
 
 	public void onDisable() {
@@ -293,6 +295,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 
 	@EventHandler(priority=EventPriority.LOW)
 	public void onPlayerInteract(PlayerInteractEvent event) {
+		World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		World prisonworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		
 		PrisonPearl pp = pearlstorage.getByItemStack(event.getItem());
 		if (pp == null)
 			return;
@@ -307,6 +312,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 
 		Player player = event.getPlayer();
+		Location loc = player.getLocation();
+		if (loc.getWorld() == prisonworld) // don't "free" players to the prison world
+			loc = respawnworld.getSpawnLocation();
 		pearlstorage.free(pp, player.getLocation());
 		player.getInventory().setItemInHand(null);
 		event.setCancelled(true);
@@ -368,7 +376,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			
 		case FREED:
 			player.sendMessage("You've been freed!");
-			player.teleport(event.getLocation());
+			if (event.getLocation() != null)
+				player.teleport(event.getLocation());
 			break;
 		}
 	}
@@ -397,6 +406,140 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
 
 		player.setBedSpawnLocation(Bukkit.getWorlds().get(0).getSpawnLocation()); // reset the player's normal spawn location
+		return true;
+	}
+	
+	@Override
+	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		if (label.equalsIgnoreCase("pplocate")) {
+			return locateCmd(sender, args, false);
+		} else if (label.equalsIgnoreCase("pplocateany")) {
+			return locateCmd(sender, args, true);
+		} else if (label.equalsIgnoreCase("ppfree")) {
+			return freeCmd(sender, args, false);
+		} else if (label.equalsIgnoreCase("ppfreeany")) {
+			return freeCmd(sender, args, true);
+		}
+
+		return false;
+	}
+	
+	private boolean locateCmd(CommandSender sender, String args[], boolean any) {
+		String name_is;
+		String name_possesive;
+		PrisonPearl pp;
+		
+		if (!any) {
+			if (args.length != 0)
+				return false;
+			
+			if (!(sender instanceof Player)) {
+				sender.sendMessage("Must use pplocateany at the console");
+				return true;
+			}
+				
+			name_is = "You are";
+			name_possesive = "Your";
+			pp = pearlstorage.getByImprisoned((Player)sender);
+		} else {
+			if (args.length != 1)
+				return false;
+			
+			name_is = args[0] + " is";
+			name_possesive = args[0] + "'s";
+			pp = pearlstorage.getByImprisoned(args[0]);
+		}
+		
+		if (pp != null) {
+			String world = pp.getLocation().getWorld().getName();
+			Vector vec = pp.getLocation().toVector();
+			String vecstr = vec.getBlockX() + " " + vec.getBlockY() + " " + vec.getBlockZ();
+			if (pp.getHolder() != null) {
+				sender.sendMessage(name_possesive + " prison pearl is held by " + pp.getHolderName() + " at " + world + " " + vecstr);
+			} else {
+				sender.sendMessage(name_possesive + " prison pearl was dropped at " + world + " " + vecstr);
+			}
+		} else {
+			sender.sendMessage(name_is + " not imprisoned");
+		}
+		
+		return true;
+	}
+	
+	private boolean freeCmd(CommandSender sender, String args[], boolean any) {
+		PrisonPearl pp;
+		Location loc;
+		
+		World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		World prisonworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		
+		if (!any) {
+			if (args.length > 1)
+				return false;
+			
+			if (!(sender instanceof Player)) {
+				sender.sendMessage("Must use freeany at console");
+				return true;
+			}
+			
+			Player player = (Player)sender;
+			loc = player.getLocation();
+			if (loc.getWorld() == prisonworld) // don't "free" players to the prison world
+				loc = respawnworld.getSpawnLocation();
+			
+			if (args.length == 0) {
+				ItemStack item = player.getItemInHand();
+				if (item.getType() != Material.ENDER_PEARL) {
+					sender.sendMessage("You must hold a pearl or supply the player's name to free a player");
+					return true;
+				}
+				
+				pp = pearlstorage.getByItemStack(item);
+				if (pp == null) {
+					sender.sendMessage("This is an ordinary ender pearl");
+					return true;
+				}
+				
+				player.setItemInHand(null);
+			} else {				
+				boolean found = false;
+				
+				pp = pearlstorage.getByImprisoned(args[0]);
+				if (pp != null) {
+					Inventory inv = player.getInventory();
+					for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+						if (entry.getValue().getDurability() == pp.getID()) {
+							inv.setItem(entry.getKey(), null);
+							found = true;
+							break;
+						}
+					}
+				}
+				
+				if (!found) {
+					sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
+					return true;
+				}
+			}
+		} else {
+			if (args.length != 1)
+				return false;
+			
+			loc = respawnworld.getSpawnLocation();
+			pp = pearlstorage.getByImprisoned(args[0]);
+			
+			if (pp == null) {
+				sender.sendMessage(args[0] + " is not imprisoned");
+				return true;
+			}
+		}
+		
+		if (pp.getImprisonedPlayer() != sender)
+			sender.sendMessage("You've freed " + pp.getImprisonedName());
+		else
+			loc = null;
+		
+		pearlstorage.free(pp, loc);	
 		return true;
 	}
 }
