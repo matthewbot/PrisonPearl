@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -64,6 +65,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			throw new RuntimeException("Failed to load prison pearls from " + ppfile.getAbsolutePath(), e);
 		}
 
+		// shamelessly swiped from bookworm, not sure why there isn't a Bukkit API for this
+		// this causes items to be stacked by their durability value
 		try {
 			Method method = net.minecraft.server.Item.class.getDeclaredMethod("a", boolean.class);
 			if (method.getReturnType() == net.minecraft.server.Item.class) {
@@ -138,8 +141,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		} else {
 			holder = view.getBottomInventory().getHolder();
 		}
-
-		pp.setHolder(holder);
+		
+		if (holder instanceof StorageMinecart) {
+			event.setCancelled(true);
+		} else {
+			pp.setHolder(holder);
+		}
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)

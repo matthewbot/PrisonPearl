@@ -7,7 +7,6 @@ import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.StorageMinecart;
 import org.bukkit.inventory.InventoryHolder;
 
 public class PrisonPearl {
@@ -83,8 +82,6 @@ public class PrisonPearl {
 		if ((entity = getHolderEntity()) != null) {
 			if (entity instanceof Player) {
 				return ((Player)entity).getDisplayName();
-			} else if (entity instanceof StorageMinecart) {
-				return "a storage minecart";
 			} else {
 				return "an unknown entity"; // TODO log these
 			}
@@ -96,6 +93,8 @@ public class PrisonPearl {
 				return "a furnace";
 			case BREWING_STAND:
 				return "a brewing stand";
+			case DISPENSER:
+				return "a dispenser";
 			default:
 				return "an unknown block"; // TODO log these
 			}
