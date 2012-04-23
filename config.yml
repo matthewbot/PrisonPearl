@@ -1,0 +1,4 @@
+respawn_world: world
+prison_world: world_the_end
+tag_ticks: 30*20
+logout_imprison: true

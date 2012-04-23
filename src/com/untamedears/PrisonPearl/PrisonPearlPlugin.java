@@ -4,12 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -43,10 +41,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private PearlTagList taglist;
 	private PrisonPearlStorage pearlstorage;
 
-	private Location prisonlocation;
-
 	public void onEnable() {
-		taglist = new PearlTagList(this, 20*10);
+		getConfig().options().copyDefaults(true);
+		saveConfig();
+		
+		taglist = new PearlTagList(this, getConfig().getInt("tag_ticks"));
 		pearlstorage = new PrisonPearlStorage();
 
 		File ppfile = getPrisonPearlsFile();
@@ -54,21 +53,15 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			pearlstorage.load(ppfile);
 		} catch (FileNotFoundException e) {
 			System.out.println("Prison pearls data file does not exist, creating.");
-			if (!ppfile.getParentFile().mkdirs()) {
-				throw new RuntimeException("Failed to create directory " + ppfile.getParentFile().getAbsolutePath());
-			}
 
 			try {
-				ppfile.createNewFile();
+				pearlstorage.save(ppfile);
 			} catch (IOException e2) {
 				throw new RuntimeException("Failed to create " + ppfile.getAbsolutePath(), e2);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to load prison pearls from " + ppfile.getAbsolutePath(), e);
 		}
-
-		List<World> worlds = getServer().getWorlds();
-		prisonlocation = worlds.get(worlds.size()-1).getSpawnLocation();
 
 		try {
 			Method method = net.minecraft.server.Item.class.getDeclaredMethod("a", boolean.class);
@@ -180,9 +173,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		taglist.taggerExpired(player);
 
 		// then expire the tag on the player, and see if he should be imprisoned
-		PearlTag tag = taglist.taggedKilled(player);
-		if (tag != null)
-			imprisonPlayer(tag.getTaggedPlayer(), tag.getTaggerPlayer());
+		if (getConfig().getBoolean("logout_imprison")) {
+			PearlTag tag = taglist.taggedKilled(player);
+			if (tag != null)
+				imprisonPlayer(tag.getTaggedPlayer(), tag.getTaggerPlayer());
+		}
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -237,12 +232,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
+		World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
+		
 		Player player = event.getPlayer();
 		if (pearlstorage.getByImprisoned(player) != null) {
 			player.sendMessage("Your prison pearl has bound you to this bleak and endless world");
-			event.setRespawnLocation(prisonlocation);
-		} else if (event.getRespawnLocation().getWorld() == prisonlocation.getWorld()) {
-			event.setRespawnLocation(Bukkit.getWorlds().get(0).getSpawnLocation());
+			if (event.getRespawnLocation().getWorld() != prison)
+				event.setRespawnLocation(prison.getSpawnLocation());
+		} else if (event.getRespawnLocation().getWorld() == prison) {
+			event.setRespawnLocation(respawn.getSpawnLocation());
 			player.sendMessage("You've been freed!");
 		}
 	}
