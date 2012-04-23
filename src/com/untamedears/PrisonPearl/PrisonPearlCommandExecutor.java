@@ -17,19 +17,18 @@ public class PrisonPearlCommandExecutor implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if (args.length >= 1) {	
-			if (args[0].equalsIgnoreCase("locate")) {
+			if (args[0].equalsIgnoreCase("locate") || args[0].equalsIgnoreCase("info")) {
 				return locate(cmd, sender, args);
 			} else if (args[0].equalsIgnoreCase("free")) {
 				return free(cmd, sender, args);
 			} 
 		}
 		
-		sender.sendMessage("Invalid command. Valid commands are locate, free");
-		return true;
+		return false;
 	}
 	
 	private boolean locate(Command cmd, CommandSender sender, String args[]) {
-		String name_posses;
+		String name_is;
 		String name_possesive;
 		PrisonPearl pp;
 		
@@ -39,7 +38,7 @@ public class PrisonPearlCommandExecutor implements CommandExecutor {
 				return true;
 			}
 				
-			name_posses = "You have";
+			name_is = "You are";
 			name_possesive = "Your";
 			pp = pearlstorage.getByImprisoned((Player)sender);
 		} else if (args.length == 2) {
@@ -48,7 +47,7 @@ public class PrisonPearlCommandExecutor implements CommandExecutor {
 				return true;
 			}
 			
-			name_posses = args[1] + " has";
+			name_is = args[1] + " is";
 			name_possesive = args[1] + "'s";
 			pp = pearlstorage.getByImprisoned(args[1]);
 		} else {
@@ -66,7 +65,7 @@ public class PrisonPearlCommandExecutor implements CommandExecutor {
 				sender.sendMessage(name_possesive + " prison pearl was dropped at " + world + " " + vecstr);
 			}
 		} else {
-			sender.sendMessage(name_posses + " no prison pearl");
+			sender.sendMessage(name_is + " not imprisoned");
 		}
 		
 		return true;
@@ -83,7 +82,7 @@ public class PrisonPearlCommandExecutor implements CommandExecutor {
 		
 		PrisonPearl pp = pearlstorage.getByImprisoned(args[1]);
 		if (pp == null) {
-			sender.sendMessage(args[1] + " has no prison pearl");
+			sender.sendMessage(args[1] + " is not imprisoned");
 			return true;
 		}
 		

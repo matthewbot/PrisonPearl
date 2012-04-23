@@ -237,7 +237,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		
 		Player player = event.getPlayer();
 		if (pearlstorage.getByImprisoned(player) != null) {
-			player.sendMessage("Your prison pearl has bound you to this bleak and endless world");
+			for (String line : getConfig().getStringList("prison_motd"))
+				player.sendMessage(line);
 			if (event.getRespawnLocation().getWorld() != prison)
 				event.setRespawnLocation(prison.getSpawnLocation());
 		} else if (event.getRespawnLocation().getWorld() == prison) {
@@ -278,6 +279,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		pearlstorage.free(pp, player.getLocation());
 		player.getInventory().setItemInHand(null);
 		event.setCancelled(true);
+		
+		player.sendMessage("You've freed " + pp.getImprisonedName());
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -299,8 +302,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		Player other = event.getOtherPlayer();
 
 		if (event.getType() == PearlTagEvent.Type.NEW) {
-			tagger.sendMessage("You've tagged " + tagged.getDisplayName());
-			tagged.sendMessage("You've been tagged by " + tagger.getDisplayName());
+			tagger.sendMessage("You've tagged " + tagged.getDisplayName() + " for imprisonment");
+			tagged.sendMessage("You've been tagged for imprisonment by " + tagger.getDisplayName());
 		} else if (event.getType() == PearlTagEvent.Type.EXPIRED) {
 			tagger.sendMessage("Your tag expired for " + tagged.getDisplayName());
 			tagged.sendMessage("You are no longer tagged by " + tagger.getDisplayName());

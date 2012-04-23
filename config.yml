@@ -1,4 +1,8 @@
 respawn_world: world
-prison_world: world_the_end
-tag_ticks: 30*20
+tag_ticks: 600
 logout_imprison: true
+prison_world: world_the_end
+prison_motd:
+   - You are trapped in this bleak and endless world
+   - by a prison pearl.
+   - Type /pp locate to locate your pearl.
