@@ -4,5 +4,21 @@ version: 0.1
 
 commands:
    pp:
-      description: Prison Pearl
+      description: Basic Prison Pearl command
+      usage: /<command> [command]
+      permission-message: You don't have permission to use this command
+      
+permissions:
+   prisonpearl.*:
+      description: Gives full access to PrisonPearl commands
+      default: op
+      children:
+         prisonpearl.locate: true
+         prisonpearl.free: true
+
+   prisonpearl.locate:
+      description: Allows user to locate prison pearls other than his own
+      
+   prisonpearl.free:
+      description: Allows user to free prison pearls he does not possess
       
