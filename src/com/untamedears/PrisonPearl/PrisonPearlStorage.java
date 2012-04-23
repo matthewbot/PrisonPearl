@@ -74,13 +74,17 @@ public class PrisonPearlStorage {
 	public PrisonPearl imprison(Player imprisoned, Player imprisoner) {
 		PrisonPearl pp = new PrisonPearl(nextid++, imprisoned.getName(), imprisoner);
 		put(pp);
-		pearlEvent(pp, PrisonPearlEvent.Type.NEW);
 		return pp;
 	}
 	
-	public void free(PrisonPearl pp, Location loc) {
-		remove(pp);
-		pearlEvent(pp, PrisonPearlEvent.Type.FREED, loc);
+	public void free(PrisonPearl pp) {
+		pearls_byid.remove(pp.getID());
+		pearls_byimprisoned.remove(pp.getImprisonedName());
+	}
+	
+	private void put(PrisonPearl pp) {
+		pearls_byid.put(pp.getID(), pp);
+		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
 	}
 	
 	public PrisonPearl getByID(short id) {
@@ -100,23 +104,5 @@ public class PrisonPearlStorage {
 	
 	public PrisonPearl getByImprisoned(Player player) {
 		return pearls_byimprisoned.get(player.getName());
-	}
-	
-	private void put(PrisonPearl pp) {
-		pearls_byid.put(pp.getID(), pp);
-		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
-	}
-	
-	private void remove(PrisonPearl pp) {
-		pearls_byid.remove(pp.getID());
-		pearls_byimprisoned.remove(pp.getImprisonedName());
-	}
-	
-	private void pearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type) {
-		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, type));
-	}
-	
-	private void pearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type, Location loc) {
-		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, type, loc));
 	}
 }

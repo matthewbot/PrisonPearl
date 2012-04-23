@@ -106,18 +106,10 @@ public class PrisonPearl {
 	public void setHolder(InventoryHolder holder) {
 		this.holder = holder;
 		item = null;
-		
-		pearlEvent(this, PrisonPearlEvent.Type.HELD);
 	}
 	
 	public void setItem(Item item) {
 		holder = null;
 		this.item = item;
-		
-		pearlEvent(this, PrisonPearlEvent.Type.DROPPED);
-	}
-	
-	private void pearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type) {
-		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, type));
 	}
 }
