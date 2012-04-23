@@ -54,7 +54,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		saveConfig();
 		
 		taglist = new PearlTagList(this, getConfig().getInt("tag_ticks"));
-		pearlstorage = new PrisonPearlStorage();
+		pearlstorage = new PrisonPearlStorage(this, getConfig().getInt("summon_damage_ticks"));
 
 		File ppfile = getPrisonPearlsFile();
 		try {
@@ -88,6 +88,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		getCommand("pplocateany").setExecutor(this);
 		getCommand("ppfree").setExecutor(this);
 		getCommand("ppfreeany").setExecutor(this);
+		getCommand("ppsummon").setExecutor(this);
+		getCommand("ppreturn").setExecutor(this);
+		getCommand("ppkill").setExecutor(this);
 	}
 
 	// save pearls
@@ -180,19 +183,23 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			event.setRespawnLocation(newloc);
 	}
 	
-	// Give players the prison motd if they're imprisoned
+	// Give players the prison motd if they're imprisoned and not being summoned
 	// Send players to the real world if they've been freed while offline
 	private Location playerSpawn(Player player, Location spawnloc) {
 		World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
 		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
 		
+		PrisonPearl pp = pearlstorage.getByImprisoned(player);
 		Location newloc=null;
-		if (pearlstorage.getByImprisoned(player) != null) {
-			if (spawnloc.getWorld() != prison)
-				newloc = prison.getSpawnLocation();
-			
-			for (String line : getConfig().getStringList("prison_motd"))
-				player.sendMessage(line);
+		
+		if (pp != null) {
+			if (!pearlstorage.isSummoning(pp)) {
+				if (spawnloc.getWorld() != prison)
+					newloc = prison.getSpawnLocation();
+				
+				for (String line : getConfig().getStringList("prison_motd"))
+					player.sendMessage(line);
+			}
 		} else if (spawnloc.getWorld() == prison) {
 			newloc = respawn.getSpawnLocation();
 			player.sendMessage("You've been freed!");
@@ -267,6 +274,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 
 	// Expire any tags the player had
 	// Imprison the player if he was tagged
+	// Return the player if he was summoned
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onEntityDeath(EntityDeathEvent event) {
 		if (!(event.getEntity() instanceof Player))
@@ -278,16 +286,21 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		PearlTag tag = taglist.taggedKilled(player);
 		if (tag != null)
 			imprisonPlayer(tag);
+		
+		PrisonPearl pp = pearlstorage.getByImprisoned(player);
+		if (pp != null)
+			returnPlayer(pp);
 	}
 
 	// Track the location of a pearl if it spawns as an item for any reason
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onItemSpawn(ItemSpawnEvent event) {
-		PrisonPearl pp = pearlstorage.getByItemStack(event.getEntity().getItemStack());
+		Item item = event.getEntity();
+		PrisonPearl pp = pearlstorage.getByItemStack(item.getItemStack());
 		if (pp == null)
 			return;
 		
-		updatePearl(pp, event.getEntity());
+		updatePearl(pp, item);
 	}
 	
 	// Track the location of a pearl if a player picks it up
@@ -371,6 +384,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	// Announce prison pearl events
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPrisonPearlEvent(PrisonPearlEvent event) {
+		World prisonworld = Bukkit.getWorld(getConfig().getString("prison_world"));
+		
 		PrisonPearl pp = event.getPrisonPearl();
 		Player player = pp.getImprisonedPlayer();
 		if (player == null) // player not online?
@@ -387,6 +402,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 
 		case DROPPED:
 			player.sendMessage("Your prison pearl was dropped at " + world + " " + vecstr);
+			break;
+			
+		case SUMMONED:
+			player.sendMessage("You've been summoned to your prison pearl!");
+			player.teleport(pp.getLocation());
+			break;
+			
+		case RETURNED:
+			player.sendMessage("You've been returned to your prison");
+			player.teleport(prisonworld.getSpawnLocation());
 			break;
 			
 		case FREED:
@@ -407,6 +432,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return freeCmd(sender, args, false);
 		} else if (label.equalsIgnoreCase("ppfreeany")) {
 			return freeCmd(sender, args, true);
+		} else if (label.equalsIgnoreCase("ppsummon")) {
+			return summonCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppreturn")) {
+			return returnCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppkill")) {
+			return killCmd(sender, args);
 		}
 
 		return false;
@@ -524,6 +555,183 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		freePearl(pp, loc);	
 		return true;
 	}
+	
+	private boolean summonCmd(CommandSender sender, String args[]) {
+		PrisonPearl pp;
+		
+		if (args.length > 1)
+			return false;
+		
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		
+		if (args.length == 0) {
+			ItemStack item = player.getItemInHand();
+			if (item.getType() != Material.ENDER_PEARL) {
+				sender.sendMessage("You must hold a pearl or supply the player's name to summon a player");
+				return true;
+			}
+			
+			pp = pearlstorage.getByItemStack(item);
+			if (pp == null) {
+				sender.sendMessage("This is an ordinary ender pearl");
+				return true;
+			}
+		} else {		
+			boolean found = false;
+			
+			pp = pearlstorage.getByImprisoned(args[0]);
+			if (pp != null) {
+				Inventory inv = player.getInventory();
+				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+					if (entry.getValue().getDurability() == pp.getID()) {
+						found = true;
+						break;
+					}
+				}
+			}
+			
+			if (!found) {
+				sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
+				return true;
+			}
+		}
+	
+		if (pp.getImprisonedPlayer() == null) {
+			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
+			return true;
+		} else if (pp.getImprisonedPlayer() == player) {
+			sender.sendMessage("You cannot summon yourself!");
+			return true;
+		} else if (pearlstorage.isSummoning(pp)) {
+			sender.sendMessage(pp.getImprisonedName() + " is already summoned");
+			return true;
+		}
+			
+		sender.sendMessage("You've summoned " + pp.getImprisonedName());
+		summonPlayer(pp);	
+		return true;		
+	}
+	
+	private boolean returnCmd(CommandSender sender, String args[]) {
+		PrisonPearl pp;
+		
+		if (args.length > 1)
+			return false;
+		
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		
+		if (args.length == 0) {
+			ItemStack item = player.getItemInHand();
+			if (item.getType() != Material.ENDER_PEARL) {
+				sender.sendMessage("You must hold a pearl or supply the player's name to return a player");
+				return true;
+			}
+			
+			pp = pearlstorage.getByItemStack(item);
+			if (pp == null) {
+				sender.sendMessage("This is an ordinary ender pearl");
+				return true;
+			}
+		} else {		
+			boolean found = false;
+			
+			pp = pearlstorage.getByImprisoned(args[0]);
+			if (pp != null) {
+				Inventory inv = player.getInventory();
+				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+					if (entry.getValue().getDurability() == pp.getID()) {
+						found = true;
+						break;
+					}
+				}
+			}
+			
+			if (!found) {
+				sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
+				return true;
+			}
+		}
+	
+		if (pp.getImprisonedPlayer() == player) {
+			sender.sendMessage("You cannot return yourself!");
+			return true;
+		} else if (!pearlstorage.isSummoning(pp)) {
+			sender.sendMessage(pp.getImprisonedName() + " has not been summoned!");
+			return true;
+		}
+			
+		sender.sendMessage("You've returned " + pp.getImprisonedName());
+		returnPlayer(pp);	
+		return true;		
+	}
+	
+	private boolean killCmd(CommandSender sender, String args[]) {
+		PrisonPearl pp;
+		
+		if (args.length > 1)
+			return false;
+		
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		
+		if (args.length == 0) {
+			ItemStack item = player.getItemInHand();
+			if (item.getType() != Material.ENDER_PEARL) {
+				sender.sendMessage("You must hold a pearl or supply the player's name to return a player");
+				return true;
+			}
+			
+			pp = pearlstorage.getByItemStack(item);
+			if (pp == null) {
+				sender.sendMessage("This is an ordinary ender pearl");
+				return true;
+			}
+		} else {		
+			boolean found = false;
+			
+			pp = pearlstorage.getByImprisoned(args[0]);
+			if (pp != null) {
+				Inventory inv = player.getInventory();
+				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+					if (entry.getValue().getDurability() == pp.getID()) {
+						found = true;
+						break;
+					}
+				}
+			}
+			
+			if (!found) {
+				sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
+				return true;
+			}
+		}
+	
+		if (pp.getImprisonedPlayer() == player) {
+			sender.sendMessage("You cannot return yourself!");
+			return true;
+		} else if (!pearlstorage.isSummoning(pp)) {
+			sender.sendMessage(pp.getImprisonedName() + " has not been summoned!");
+			return true;
+		}
+			
+		sender.sendMessage("You've killed " + pp.getImprisonedName());
+		pp.getImprisonedPlayer().setHealth(0);
+		return true;		
+	}
 
 	private boolean imprisonPlayer(PearlTag tag) {
 		Player imprisoner = tag.getTaggerPlayer();
@@ -581,6 +789,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.NEW)); // set off an event
 		return true;
+	}
+	
+	private void summonPlayer(PrisonPearl pp) {
+		pearlstorage.setSummoning(pp, true);
+		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.SUMMONED));
+	}
+	
+	private void returnPlayer(PrisonPearl pp) {
+		pearlstorage.setSummoning(pp, false);
+		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.RETURNED));
 	}
 	
 	private void updatePearl(PrisonPearl pp, Item item) {

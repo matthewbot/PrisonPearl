@@ -25,10 +25,6 @@ public class PrisonPearl {
 		return id;
 	}
 	
-	public boolean isValid() {
-		return id != -1;
-	}
-	
 	public String getImprisonedName() {
 		return imprisonedname;
 	}

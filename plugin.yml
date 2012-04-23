@@ -21,6 +21,18 @@ commands:
       usage: /<command> player
       permission: prisonpearl.free
       
+   ppsummon:
+      description: Summons a player from their prison pearl
+      usage: /ppsummon [player]
+      
+   ppreturn:
+      description: Returns a summoned player back to their prison pearl
+      usage: /ppbanish [player]
+      
+   ppkill:
+      description: Instantly kills a summoned player, sending them back to their prison pearl
+      usage: /ppkill [player]
+      
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands

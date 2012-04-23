@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -18,16 +20,35 @@ import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
-public class PrisonPearlStorage {
+public class PrisonPearlStorage implements Runnable {
 	private Map<Short, PrisonPearl> pearls_byid;
 	private Map<String, PrisonPearl> pearls_byimprisoned;
+	private Set<PrisonPearl> pearls_summoning;
 	private short nextid;
 	
-	public PrisonPearlStorage() {
+	public PrisonPearlStorage(Plugin plugin, long summondamageticks) {
 		pearls_byid = new HashMap<Short, PrisonPearl>();
 		pearls_byimprisoned = new HashMap<String, PrisonPearl>();
+		pearls_summoning = new HashSet<PrisonPearl>();
 		nextid = 1;
+		
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this, summondamageticks, summondamageticks);
+	}
+	
+	public void run() {
+		for (PrisonPearl pp : pearls_summoning) {
+			Player player = pp.getImprisonedPlayer();
+			if (player == null)
+				continue;
+			
+			double dist = player.getLocation().distance(pp.getLocation());
+			if (dist > 20) { // TODO configurable
+				player.sendMessage("You feel the distant tug of your prison pearl");
+				player.damage(1);
+			}
+		}
 	}
 
 	public void load(File file) throws IOException {
@@ -42,12 +63,15 @@ public class PrisonPearlStorage {
 			short id = Short.parseShort(parts[0]);
 			String imprisoned = parts[1];
 			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
+			boolean summoning = parts[6].equals("S");
 			BlockState block = loc.getBlock().getState();
 			if (!(block instanceof InventoryHolder))
 				continue;
 			
 			PrisonPearl pp = new PrisonPearl(id, imprisoned, (InventoryHolder)block);
 			put(pp);
+			if (summoning)
+				setSummoning(pp, true);
 		}
 		
 		fis.close();
@@ -64,7 +88,7 @@ public class PrisonPearlStorage {
 				continue;
 			
 			Location loc = pp.getLocation();
-			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
+			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + (isSummoning(pp) ? "S" : "-") + "\n");
 		}
 		
 		br.flush();
@@ -77,14 +101,25 @@ public class PrisonPearlStorage {
 		return pp;
 	}
 	
+	private void put(PrisonPearl pp) {
+		pearls_byid.put(pp.getID(), pp);
+		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
+	}
+	
 	public void free(PrisonPearl pp) {
 		pearls_byid.remove(pp.getID());
 		pearls_byimprisoned.remove(pp.getImprisonedName());
 	}
 	
-	private void put(PrisonPearl pp) {
-		pearls_byid.put(pp.getID(), pp);
-		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
+	public void setSummoning(PrisonPearl pp, boolean summoning) {
+		if (summoning)
+			pearls_summoning.add(pp);
+		else
+			pearls_summoning.remove(pp);
+	}
+	
+	public boolean isSummoning(PrisonPearl pp) {
+		return pearls_summoning.contains(pp);
 	}
 	
 	public PrisonPearl getByID(short id) {
