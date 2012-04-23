@@ -81,6 +81,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 
 		getServer().getPluginManager().registerEvents(this, this);
+		getCommand("pp").setExecutor(new PrisonPearlCommandExecutor(pearlstorage));
 	}
 
 	public void onDisable() {
