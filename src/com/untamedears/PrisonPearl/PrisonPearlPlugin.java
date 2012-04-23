@@ -240,7 +240,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (pearlstorage.getByImprisoned(player) != null) {
 			player.sendMessage("Your prison pearl has bound you to this bleak and endless world");
 			event.setRespawnLocation(prisonlocation);
-		} else if (event.getRespawnLocation().getWorld() == prisonlocation) {
+		} else if (event.getRespawnLocation().getWorld() == prisonlocation.getWorld()) {
 			event.setRespawnLocation(Bukkit.getWorlds().get(0).getSpawnLocation());
 			player.sendMessage("You've been freed!");
 		}
