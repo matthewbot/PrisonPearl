@@ -60,7 +60,7 @@ public class PrisonPearlStorage {
 			if (pp.getHolderBlockState() == null)
 				continue;
 			
-			Location loc = pp.getHolderLocation();
+			Location loc = pp.getLocation();
 			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
 		}
 		

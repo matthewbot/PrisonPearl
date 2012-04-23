@@ -23,9 +23,11 @@ import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
@@ -183,6 +185,24 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)
+	public void onItemSpawn(ItemSpawnEvent event) {
+		PrisonPearl pp = pearlstorage.getByItemStack(event.getEntity().getItemStack());
+		if (pp == null)
+			return;
+		
+		pp.setItem(event.getEntity());
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+		PrisonPearl pp = pearlstorage.getByItemStack(event.getItem().getItemStack());
+		if (pp == null)
+			return;
+		
+		pp.setHolder(event.getPlayer());
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR)
 	public void onItemDespawn(ItemDespawnEvent event) {
 		PrisonPearl pp = pearlstorage.getByItemStack(event.getEntity().getItemStack());
 		if (pp == null)
@@ -196,10 +216,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		for (Entity e : event.getChunk().getEntities()) {
 			if (!(e instanceof Item))
 				continue;
-
+			
 			final PrisonPearl pp = pearlstorage.getByItemStack(((Item)e).getItemStack());
 			if (pp == null)
-				continue;
+				continue;	
 
 			final Entity entity = e;
 			Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() { // doing this in onChunkUnload causes weird things to happen
@@ -299,14 +319,19 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (player == null) // player not online?
 			return; // gets no intel then
 
+		String world = pp.getLocation().getWorld().getName();
+		Vector vec = pp.getLocation().toVector();
+		String vecstr = vec.getBlockX() + " " + vec.getBlockY() + " " + vec.getBlockZ();
+		
 		switch (event.getType()) {
 		case HELD:
-			String world = pp.getHolderLocation().getWorld().getName();
-			Vector vec = pp.getHolderLocation().toVector();
-			String vecstr = vec.getBlockX() + " " + vec.getBlockY() + " " + vec.getBlockZ();
 			player.sendMessage("Your prison pearl is now held by " + pp.getHolderName() + " at " + world + " " + vecstr);
 			break;
 
+		case DROPPED:
+			player.sendMessage("Your prison pearl was dropped at " + world + " " + vecstr);
+			break;
+			
 		case FREED:
 			player.sendMessage("You've been freed!");
 			player.teleport(event.getLocation());

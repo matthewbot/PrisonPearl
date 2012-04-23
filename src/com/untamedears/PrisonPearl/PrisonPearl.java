@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.StorageMinecart;
 import org.bukkit.inventory.InventoryHolder;
@@ -13,6 +14,7 @@ public class PrisonPearl {
 	private short id;
 	private String imprisonedname;
 	private InventoryHolder holder;
+	private Item item;
 	
 	public PrisonPearl(short id, String imprisonedname, InventoryHolder holder) {
 		this.id = id;
@@ -57,15 +59,21 @@ public class PrisonPearl {
 		}
 	}
 	
-	public Location getHolderLocation() {
-		if (holder instanceof Entity) {
-			return ((Entity)holder).getLocation();
-		} else if (holder instanceof BlockState) {
-			return ((BlockState)holder).getLocation();
-		} else if (holder instanceof DoubleChest) {
-			return ((DoubleChest)holder).getLocation();
+	public Location getLocation() {
+		if (holder != null) {
+			if (holder instanceof Entity) {
+				return ((Entity)holder).getLocation();
+			} else if (holder instanceof BlockState) {
+				return ((BlockState)holder).getLocation();
+			} else if (holder instanceof DoubleChest) {
+				return ((DoubleChest)holder).getLocation();
+			} else {
+				return null; // TODO log these 
+			}
+		} else if (item != null) {
+			return item.getLocation();
 		} else {
-			return null; // TODO log these 
+			return null; // TODO log these
 		}
 	}
 	
@@ -98,8 +106,16 @@ public class PrisonPearl {
 	
 	public void setHolder(InventoryHolder holder) {
 		this.holder = holder;
+		item = null;
 		
 		pearlEvent(this, PrisonPearlEvent.Type.HELD);
+	}
+	
+	public void setItem(Item item) {
+		holder = null;
+		this.item = item;
+		
+		pearlEvent(this, PrisonPearlEvent.Type.DROPPED);
 	}
 	
 	private void pearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type) {
