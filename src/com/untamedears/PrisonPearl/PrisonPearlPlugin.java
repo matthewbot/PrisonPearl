@@ -25,6 +25,7 @@ import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -141,6 +142,24 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		pp.setHolder(holder);
 	}
 
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerJoin(PlayerJoinEvent event) {
+		World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
+		
+		Player player = event.getPlayer();
+		if (player.isDead())
+			return;
+		
+		if (pearlstorage.getByImprisoned(player) != null) {
+			for (String line : getConfig().getStringList("prison_motd"))
+				player.sendMessage(line);
+		} else if (player.getLocation().getWorld() == prison) {
+			player.teleport(respawn.getSpawnLocation());
+			player.sendMessage("You've been freed!");
+		}
+	}
+	
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		taglist.taggerExpired(event.getPlayer());
