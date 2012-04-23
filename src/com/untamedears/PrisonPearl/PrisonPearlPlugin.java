@@ -78,7 +78,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 
 		getServer().getPluginManager().registerEvents(this, this);
-		getCommand("pp").setExecutor(new PrisonPearlCommandExecutor(pearlstorage));
+		
+		PrisonPearlCommandExecutor cmdex = new PrisonPearlCommandExecutor(pearlstorage);
+		getCommand("pplocate").setExecutor(cmdex);
+		getCommand("pplocateany").setExecutor(cmdex);
+		getCommand("ppfree").setExecutor(cmdex);
+		getCommand("ppfreeany").setExecutor(cmdex);
 	}
 
 	public void onDisable() {

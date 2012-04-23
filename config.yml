@@ -5,4 +5,4 @@ prison_world: world_the_end
 prison_motd:
    - You are trapped in this bleak and endless world
    - by a prison pearl.
-   - Type /pp locate to locate your pearl.
+   - Type /pplocate to locate your pearl.

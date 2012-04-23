@@ -3,22 +3,35 @@ main: com.untamedears.PrisonPearl.PrisonPearlPlugin
 version: 0.1
 
 commands:
-   pp:
-      description: Basic Prison Pearl command
-      usage: /<command> [locate|free] [player]
-      permission-message: You don't have permission to use this command
+   pplocate:
+      description: Locates your prison pearl
+      usage: /<command>
+  
+   pplocateany:
+      description: Locates any prison pearl in the world
+      usage: /<command> player
+      permission: prisonpearl.locateany
+   
+   ppfree:
+      description: Frees a prison pearl
+      usage: /<command> [player]
+      
+   ppfreeany:
+      description: Frees any prison pearl in the world
+      usage: /<command> player
+      permission: prisonpearl.free
       
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands
       default: op
       children:
-         prisonpearl.locate: true
-         prisonpearl.free: true
+         prisonpearl.locateany: true
+         prisonpearl.freeany: true
 
-   prisonpearl.locate:
+   prisonpearl.locateany:
       description: Allows user to locate prison pearls other than his own
       
-   prisonpearl.free:
+   prisonpearl.freeany:
       description: Allows user to free prison pearls he does not possess
       
