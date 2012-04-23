@@ -34,6 +34,8 @@ public class PrisonPearlStorage {
 		FileInputStream fis = new FileInputStream(file);
 		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 		
+		nextid = Short.parseShort(br.readLine());
+		
 		String line;
 		while ((line = br.readLine()) != null) {
 			String parts[] = line.split(" ");
@@ -46,7 +48,6 @@ public class PrisonPearlStorage {
 			
 			PrisonPearl pp = new PrisonPearl(id, imprisoned, (InventoryHolder)block);
 			put(pp);
-			nextid = (short)(pp.getID()+1);
 		}
 		
 		fis.close();
@@ -56,6 +57,8 @@ public class PrisonPearlStorage {
 		FileOutputStream fos = new FileOutputStream(file);
 		BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fos));
 	
+		br.write(nextid + "\n");
+		
 		for (PrisonPearl pp : pearls_byid.values()) {
 			if (pp.getHolderBlockState() == null)
 				continue;
