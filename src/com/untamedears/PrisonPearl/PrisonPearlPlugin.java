@@ -501,40 +501,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			Player player = (Player)sender;
 			loc = player.getLocation();
 			
-			if (args.length == 0) {
-				ItemStack item = player.getItemInHand();
-				if (item.getType() != Material.ENDER_PEARL) {
-					sender.sendMessage("You must hold a pearl or supply the player's name to free a player");
-					return true;
-				}
-				
-				pp = pearlstorage.getByItemStack(item);
-				if (pp == null) {
-					sender.sendMessage("This is an ordinary ender pearl");
-					return true;
-				}
-				
-				player.setItemInHand(null);
-			} else {		
-				boolean found = false;
-				
-				pp = pearlstorage.getByImprisoned(args[0]);
-				if (pp != null) {
-					Inventory inv = player.getInventory();
-					for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
-						if (entry.getValue().getDurability() == pp.getID()) {
-							inv.setItem(entry.getKey(), null);
-							found = true;
-							break;
-						}
-					}
-				}
-				
-				if (!found) {
-					sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
-					return true;
-				}
-			}
+			int slot = getCommandPearlSlot(player, args);
+			if (slot == -1)
+				return true;
+			
+			pp = pearlstorage.getByItemStack(player.getInventory().getItem(slot));
+			player.getInventory().setItem(slot, null);		
 		} else {
 			if (args.length != 1)
 				return false;
@@ -557,8 +529,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	private boolean summonCmd(CommandSender sender, String args[]) {
-		PrisonPearl pp;
-		
 		if (args.length > 1)
 			return false;
 		
@@ -568,38 +538,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 		
 		Player player = (Player)sender;
-		
-		if (args.length == 0) {
-			ItemStack item = player.getItemInHand();
-			if (item.getType() != Material.ENDER_PEARL) {
-				sender.sendMessage("You must hold a pearl or supply the player's name to summon a player");
-				return true;
-			}
-			
-			pp = pearlstorage.getByItemStack(item);
-			if (pp == null) {
-				sender.sendMessage("This is an ordinary ender pearl");
-				return true;
-			}
-		} else {		
-			boolean found = false;
-			
-			pp = pearlstorage.getByImprisoned(args[0]);
-			if (pp != null) {
-				Inventory inv = player.getInventory();
-				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
-					if (entry.getValue().getDurability() == pp.getID()) {
-						found = true;
-						break;
-					}
-				}
-			}
-			
-			if (!found) {
-				sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
-				return true;
-			}
-		}
+		PrisonPearl pp = getCommandPearl(player, args);
+		if (pp == null)
+			return true;
 	
 		if (pp.getImprisonedPlayer() == null) {
 			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
@@ -618,8 +559,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	private boolean returnCmd(CommandSender sender, String args[]) {
-		PrisonPearl pp;
-		
 		if (args.length > 1)
 			return false;
 		
@@ -629,39 +568,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 		
 		Player player = (Player)sender;
+		PrisonPearl pp = getCommandPearl(player, args); 
+		if (pp == null)
+			return true;
 		
-		if (args.length == 0) {
-			ItemStack item = player.getItemInHand();
-			if (item.getType() != Material.ENDER_PEARL) {
-				sender.sendMessage("You must hold a pearl or supply the player's name to return a player");
-				return true;
-			}
-			
-			pp = pearlstorage.getByItemStack(item);
-			if (pp == null) {
-				sender.sendMessage("This is an ordinary ender pearl");
-				return true;
-			}
-		} else {		
-			boolean found = false;
-			
-			pp = pearlstorage.getByImprisoned(args[0]);
-			if (pp != null) {
-				Inventory inv = player.getInventory();
-				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
-					if (entry.getValue().getDurability() == pp.getID()) {
-						found = true;
-						break;
-					}
-				}
-			}
-			
-			if (!found) {
-				sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
-				return true;
-			}
-		}
-	
 		if (pp.getImprisonedPlayer() == player) {
 			sender.sendMessage("You cannot return yourself!");
 			return true;
@@ -676,8 +586,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	private boolean killCmd(CommandSender sender, String args[]) {
-		PrisonPearl pp;
-		
 		if (args.length > 1)
 			return false;
 		
@@ -687,43 +595,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 		
 		Player player = (Player)sender;
-		
-		if (args.length == 0) {
-			ItemStack item = player.getItemInHand();
-			if (item.getType() != Material.ENDER_PEARL) {
-				sender.sendMessage("You must hold a pearl or supply the player's name to return a player");
-				return true;
-			}
-			
-			pp = pearlstorage.getByItemStack(item);
-			if (pp == null) {
-				sender.sendMessage("This is an ordinary ender pearl");
-				return true;
-			}
-		} else {		
-			boolean found = false;
-			
-			pp = pearlstorage.getByImprisoned(args[0]);
-			if (pp != null) {
-				Inventory inv = player.getInventory();
-				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
-					if (entry.getValue().getDurability() == pp.getID()) {
-						found = true;
-						break;
-					}
-				}
-			}
-			
-			if (!found) {
-				sender.sendMessage("You don't possess " + args[0] + "'s prison pearl");
-				return true;
-			}
-		}
-	
-		if (pp.getImprisonedPlayer() == player) {
-			sender.sendMessage("You cannot return yourself!");
+		PrisonPearl pp = getCommandPearl(player, args);
+		if (pp == null)
 			return true;
-		} else if (!pearlstorage.isSummoning(pp)) {
+	
+		if (!pearlstorage.isSummoning(pp)) {
 			sender.sendMessage(pp.getImprisonedName() + " has not been summoned!");
 			return true;
 		}
@@ -731,6 +607,43 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		sender.sendMessage("You've killed " + pp.getImprisonedName());
 		pp.getImprisonedPlayer().setHealth(0);
 		return true;		
+	}
+	
+	private PrisonPearl getCommandPearl(Player player, String args[]) {
+		int slot = getCommandPearlSlot(player, args);
+		if (slot != -1)
+			return pearlstorage.getByItemStack(player.getInventory().getItem(slot));
+		else
+			return null;
+	}
+	
+	private int getCommandPearlSlot(Player player, String args[]) {
+		if (args.length == 0) {
+			ItemStack item = player.getItemInHand();
+			if (item.getType() != Material.ENDER_PEARL) {
+				player.sendMessage("You must hold a pearl or supply the player's name to use this command");
+				return -1;
+			}
+			
+			if (pearlstorage.getByItemStack(item) == null) {
+				player.sendMessage("This is an ordinary ender pearl");
+				return -1;
+			}
+			
+			return player.getInventory().getHeldItemSlot();
+		} else {		
+			PrisonPearl pp = pearlstorage.getByImprisoned(args[0]);
+			if (pp != null) {
+				Inventory inv = player.getInventory();
+				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+					if (entry.getValue().getDurability() == pp.getID())
+						return entry.getKey();
+				}
+			}
+			
+			player.sendMessage("You don't possess " + args[0] + "'s prison pearl");
+			return -1;
+		}
 	}
 
 	private boolean imprisonPlayer(PearlTag tag) {
