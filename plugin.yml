@@ -19,7 +19,7 @@ commands:
    ppfreeany:
       description: Frees any prison pearl in the world
       usage: /<command> player
-      permission: prisonpearl.free
+      permission: prisonpearl.freeany
       
    ppsummon:
       description: Summons a player from their prison pearl
