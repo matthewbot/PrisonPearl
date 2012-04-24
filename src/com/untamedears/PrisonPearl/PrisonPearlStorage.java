@@ -43,9 +43,11 @@ public class PrisonPearlStorage implements Runnable {
 			if (player == null)
 				continue;
 			
-			double dist = player.getLocation().distance(pp.getLocation());
-			if (dist > 20) { // TODO configurable
-				player.sendMessage("You feel the distant tug of your prison pearl");
+			Location pploc = pp.getLocation();
+			Location playerloc = player.getLocation();
+			
+			if (pploc.getWorld() != playerloc.getWorld() || pploc.distance(playerloc) > 20) {
+				player.sendMessage("You feel the distant tug of your prison pearl deep in your chest");
 				player.damage(1);
 			}
 		}
