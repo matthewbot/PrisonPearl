@@ -1,9 +1,10 @@
 respawn_world: world
 tag_ticks: 300
-summon_damage_radius : 20
+tag_expire_quit: true
+summon_damage_radius: 20
 summon_damage_ticks: 20
-summon_damage_amt : 2
-logout_imprison: true
+summon_damage_amt: 2
+imprison_quit: true
 prison_world: world_the_end
 prison_motd:
    - You are trapped in this bleak and endless world

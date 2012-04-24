@@ -57,12 +57,15 @@ public class PearlTagManager implements Runnable, Listener {
 		scheduleExpireTask();
 	}
 	
-	// Expire tags when a player logs off
+	// Expire tags held by a player when he logs off
+	// Expire tags on him if configured to
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
 		expireTagsHeldByPlayer(player);
-		eventTagsOnPlayer(player, PearlTagEvent.Type.EXPIRED, null, true);
+		
+		if (plugin.getConfig().getBoolean("tag_expire_quit"))
+			eventTagsOnPlayer(player, PearlTagEvent.Type.QUIT, null, true);
 	}
 	
 	// Expire tags when a player dies

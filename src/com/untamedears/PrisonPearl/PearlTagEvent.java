@@ -5,7 +5,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 public class PearlTagEvent extends Event {
-	public enum Type { NEW, EXPIRED, SWITCHED, KILLED };
+	public enum Type { NEW, EXPIRED, SWITCHED, QUIT, KILLED };
 	
 	private PearlTag tag;
 	private Type type;

@@ -186,6 +186,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			}			
 		}
 		
+		boolean imprison = false;
 		switch (event.getType()) {
 		case NEW:
 			tagger.sendMessage("You've tagged " + tagged.getDisplayName() + " for imprisonment");
@@ -200,15 +201,24 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		case SWITCHED:
 			tagger.sendMessage("Your tag for " + tagged.getDisplayName() + " is now owned by " + other.getDisplayName());
 			break;
+		
+		case QUIT:
+			if (getConfig().getBoolean("imprison_quit"))
+				imprison = true;
+			break;
 			
 		case KILLED:
+			imprison = true;
+			break;
+		}
+		
+		if (imprison) {
 			if (pearlman.imprisonPlayer(tagged, tagger)) {
 				tagger.sendMessage("You've bound " + tagged.getDisplayName() + " to a prison pearl!");
 				tagged.sendMessage("You've been bound to a prison pearl owned by " + tagger.getDisplayName());
 			} else {
 				tagger.sendMessage("You failed to imprison " + tagger.getDisplayName());
 			}
-			break;
 		}
 	}
 
