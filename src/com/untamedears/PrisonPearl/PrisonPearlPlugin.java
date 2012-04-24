@@ -416,7 +416,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			
 		case FREED:
 			player.sendMessage("You've been freed!");
-			if (event.getLocation() != null)
+			if (event.getLocation() != null && !pearlstorage.isSummoning(pp))
 				player.teleport(event.getLocation());
 			break;
 		}

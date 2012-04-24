@@ -111,6 +111,7 @@ public class PrisonPearlStorage implements Runnable {
 	public void free(PrisonPearl pp) {
 		pearls_byid.remove(pp.getID());
 		pearls_byimprisoned.remove(pp.getImprisonedName());
+		pearls_summoning.remove(pp);
 	}
 	
 	public void setSummoning(PrisonPearl pp, boolean summoning) {
