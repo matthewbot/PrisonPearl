@@ -388,7 +388,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		
 		PrisonPearl pp = event.getPrisonPearl();
 		Player player = pp.getImprisonedPlayer();
-		if (player == null) // player not online?
+		if (player == null || player.isDead()) // player not online or dead?
 			return; // gets no intel then
 
 		String world = pp.getLocation().getWorld().getName();
@@ -542,7 +542,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (pp == null)
 			return true;
 	
-		if (pp.getImprisonedPlayer() == null) {
+		if (pp.getImprisonedPlayer() == null || pp.getImprisonedPlayer().isDead()) {
 			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
 			return true;
 		} else if (pp.getImprisonedPlayer() == player) {
