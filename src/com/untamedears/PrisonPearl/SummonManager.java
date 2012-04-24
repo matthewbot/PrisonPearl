@@ -21,7 +21,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 
-public class SummonManager implements Runnable, Listener {
+public class SummonManager implements Runnable, Listener, SaveLoad {
 	private PrisonPearlPlugin plugin;
 	private PrisonPearlStorage pearls;
 	

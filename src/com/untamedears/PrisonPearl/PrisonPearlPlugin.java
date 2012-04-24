@@ -36,40 +36,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		saveConfig();
 		
 		pearls = new PrisonPearlStorage();
-		
-		File ppfile = getPrisonPearlsFile();
-		try {
-			pearls.load(ppfile);
-		} catch (FileNotFoundException e) {
-			System.out.println("Prison pearls data file does not exist, creating.");
-
-			try {
-				pearls.save(ppfile);
-			} catch (IOException e2) {
-				throw new RuntimeException("Failed to create " + ppfile.getAbsolutePath(), e2);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to load prison pearls from " + ppfile.getAbsolutePath(), e);
-		}
+		load(pearls, getPrisonPearlsFile());
 		
 		tagman = new PearlTagManager(this);
 		pearlman = new PrisonPearlManager(this, pearls);
 		summonman = new SummonManager(this, pearls);
-		
-		File summonfile = getSummonFile();
-		try {
-			summonman.load(summonfile);
-		} catch (FileNotFoundException e) {
-			System.out.println("Prison pearls data file does not exist, creating.");
-
-			try {
-				pearls.save(summonfile);
-			} catch (IOException e2) {
-				throw new RuntimeException("Failed to create " + ppfile.getAbsolutePath(), e2);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to load prison pearls from " + ppfile.getAbsolutePath(), e);
-		}
+		load(summonman, getSummonFile());
 		
 		getServer().getPluginManager().registerEvents(this, this);
 		getCommand("pplocate").setExecutor(this);
@@ -94,22 +66,33 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 
 	public void onDisable() {
+		save(pearls, getPrisonPearlsFile());
+		save(summonman, getSummonFile());
+	}
+	
+	private static void load(SaveLoad obj, File file) {
 		try {
-			File file = getPrisonPearlsFile();
-			if (file.exists())
-				file.renameTo(new File(file.getAbsolutePath() + ".bak"));
-			pearls.save(file);
+			obj.load(file);
+		} catch (FileNotFoundException e) {
+			System.out.println(file.getName() + " not exist, creating.");
+
+			try {
+				obj.save(file);
+			} catch (IOException e2) {
+				throw new RuntimeException("Failed to create " + file.getAbsolutePath(), e2);
+			}
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to save prison pearls to " + getPrisonPearlsFile().getAbsolutePath(), e);
+			throw new RuntimeException("Failed to load prison pearls from " + file.getAbsolutePath(), e);
 		}
-		
+	}
+	
+	private static void save(SaveLoad obj, File file) {
 		try {
-			File file = getSummonFile();
 			if (file.exists())
 				file.renameTo(new File(file.getAbsolutePath() + ".bak"));
-			summonman.save(file);
+			obj.save(file);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to save prison pearls to " + getPrisonPearlsFile().getAbsolutePath(), e);
+			throw new RuntimeException("Failed to save prison pearls to " + file.getAbsolutePath(), e);
 		}
 	}
 
@@ -121,6 +104,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		return new File(getDataFolder(), "summons.txt");
 	}
 	
+	// go through player spawn logic in playerSpawn, teleport them as needed
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
@@ -140,6 +124,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 	}
 	
+	// run player spawn logic in playerSpawn
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
 		Location newloc = playerSpawn(event.getPlayer(), event.getRespawnLocation());
@@ -147,16 +132,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			event.setRespawnLocation(newloc);
 	}
 	
+	// tp people in and out of the prison world
 	private Location playerSpawn(Player player, Location spawnloc) {
 		World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
 		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
 		Location newloc=null;
 		
-		System.out.println("playerSpawn");
 		if (pearls.isImprisoned(player)) { // if player is imprisoned
-			System.out.println("isImprisoned");
 			if (!summonman.isSummoned(player)) { // and not summoned
-				System.out.println("!isSummoned");
 				if (spawnloc.getWorld() != prison) // make sure he spawns in the prison world
 					newloc = prison.getSpawnLocation();
 				
@@ -164,14 +147,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 					player.sendMessage(line);
 			}
 		} else if (spawnloc.getWorld() == prison) { // not imprisoned, but spawning in prison?
-			newloc = respawn.getSpawnLocation(); // he was free'd while offline, change location to spawn
+			newloc = respawn.getSpawnLocation(); // he must've been free'd while offline, change location to spawn
 			player.sendMessage("You've been freed!");
 		}		
 		
 		return newloc;
 	}	
 
-	// Announce pearl tag events
+	// Announce pearl tag events, and imprison players
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPearlTagEvent(PearlTagEvent event) {
 		Player tagger = event.getTag().getTaggerPlayer();

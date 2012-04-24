@@ -19,7 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-public class PrisonPearlStorage {
+public class PrisonPearlStorage implements SaveLoad {
 	private Map<Short, PrisonPearl> pearls_byid;
 	private Map<String, PrisonPearl> pearls_byimprisoned;
 	private short nextid;
