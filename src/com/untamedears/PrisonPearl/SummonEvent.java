@@ -4,19 +4,19 @@ import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
-public class PrisonPearlEvent extends Event {
-	public enum Type { NEW, HELD, DROPPED, FREED };
+public class SummonEvent extends Event {
+	public enum Type { SUMMONED, RETURNED, KILLED, DIED };
 	
 	private PrisonPearl pp;
 	private Type type;
 	private Location location;
 	
-	public PrisonPearlEvent(PrisonPearl pp, Type type) {
+	public SummonEvent(PrisonPearl pp, Type type) {
 		this.pp = pp;
 		this.type = type;
 	}
 	
-	public PrisonPearlEvent(PrisonPearl pp, Type type, Location location) {
+	public SummonEvent(PrisonPearl pp, Type type, Location location) {
 		this.pp = pp;
 		this.type = type;
 		this.location = location;

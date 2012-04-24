@@ -1,6 +1,8 @@
 respawn_world: world
-tag_ticks: 600
+tag_ticks: 300
+summon_damage_radius : 20
 summon_damage_ticks: 20
+summon_damage_amt : 2
 logout_imprison: true
 prison_world: world_the_end
 prison_motd:

@@ -5,23 +5,66 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 
-public class PearlTagList implements Runnable {
-	private Plugin plugin;
-	private long expiresticks;
+public class PearlTagManager implements Runnable, Listener {
+	private PrisonPearlPlugin plugin;
+
 	private boolean scheduled;
 	private List<PearlTag> tags;
 	
-	public PearlTagList(Plugin plugin, long expiresticks) {
+	public PearlTagManager(PrisonPearlPlugin plugin) {
 		this.plugin = plugin;
-		this.expiresticks = expiresticks;
+		
 		scheduled = false;
 		tags = new ArrayList<PearlTag>();
+		
+		Bukkit.getPluginManager().registerEvents(this, plugin);
 	}
 	
-	public void tag(Player taggedplayer, Player taggerplayer) {
+	// Create tags when somebody punches somebody else with a pearl
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+		if (!(event.getDamager() instanceof Player && event.getEntity() instanceof Player))
+			return;
+
+		Player damager = (Player)event.getDamager();
+		Player player = (Player)event.getEntity();
+
+		ItemStack item = damager.getItemInHand();
+		if (item.getType() == Material.ENDER_PEARL && item.getDurability() == 0)
+			tag(player, damager);
+	}
+	
+	// Expire tags when a player logs off
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerQuit(PlayerQuitEvent event) {
+		Player player = event.getPlayer();
+		taggerExpired(player);
+		taggedLogged(player);
+	}
+	
+	// Expire tags when a player dies
+	// Kill the tag he had on him
+	@EventHandler(priority=EventPriority.HIGHEST)
+	public void onEntityDeath(EntityDeathEvent event) {
+		if (!(event.getEntity() instanceof Player))
+			return;
+
+		Player player = (Player)event.getEntity();
+		taggerExpired(player);
+		taggedKilled(player);
+	}
+	
+	private void tag(Player taggedplayer, Player taggerplayer) {
 		// first, generate a tag switch event if this person is being re-tagged by someone else
 		Iterator<PearlTag> i = tags.iterator();
 		while (i.hasNext()) {
@@ -34,7 +77,7 @@ public class PearlTagList implements Runnable {
 		}
 		
 		// then, make the tag and generate a new tag event
-		long expires = getNowTick() + expiresticks;
+		long expires = getNowTick() + plugin.getConfig().getInt("tag_ticks");
 		PearlTag tag = new PearlTag(taggedplayer, taggerplayer, expires);
 		tags.add(tag);
 		tagEvent(tag, PearlTagEvent.Type.NEW);
@@ -43,7 +86,7 @@ public class PearlTagList implements Runnable {
 		scheduleExpireTask();
 	}
 	
-	public PearlTag taggedKilled(Player taggedplayer) {
+	private PearlTag taggedKilled(Player taggedplayer) {
 		Iterator<PearlTag> i = tags.iterator();
 		while (i.hasNext()) {
 			PearlTag tag = i.next();
@@ -57,7 +100,21 @@ public class PearlTagList implements Runnable {
 		return null;
 	}
 	
-	public void taggerExpired(Player tagger) {
+	private PearlTag taggedLogged(Player taggedplayer) {
+		Iterator<PearlTag> i = tags.iterator();
+		while (i.hasNext()) {
+			PearlTag tag = i.next();
+			if (tag.getTaggedPlayer() == taggedplayer) {
+				i.remove();
+				tagEvent(tag, PearlTagEvent.Type.LOGGED);
+				return tag;
+			}
+		}
+		
+		return null;
+	}
+	
+	private void taggerExpired(Player tagger) {
 		Iterator<PearlTag> i = tags.iterator();
 		while (i.hasNext()) {
 			PearlTag tag = i.next();

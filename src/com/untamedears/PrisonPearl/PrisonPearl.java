@@ -8,6 +8,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.util.Vector;
 
 public class PrisonPearl {
 	private short id;
@@ -97,6 +98,17 @@ public class PrisonPearl {
 		} else {
 			return null; // TODO log these (really shouldn't happen)
 		}
+	}
+	
+	public String describeLocation() {
+		Location loc = getLocation();
+		Vector vec = loc.toVector();
+		String str = loc.getWorld().getName() + " " + vec.getBlockX() + " " + vec.getBlockY() + " " + vec.getBlockZ();
+		
+		if (holder != null)
+			return "held by " + getHolderName() + " at " + str;
+		else
+			return "located at " + str;
 	}
 	
 	public void setHolder(InventoryHolder holder) {
