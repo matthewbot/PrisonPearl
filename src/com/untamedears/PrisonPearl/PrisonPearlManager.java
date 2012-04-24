@@ -122,9 +122,11 @@ public class PrisonPearlManager implements Listener {
 	// Announce the person in a pearl when a player holds it
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onItemHeldChange(PlayerItemHeldEvent event) {
-		ItemStack newitem = announcePearl(event.getPlayer(), event.getPlayer().getItemInHand());
+		Inventory inv = event.getPlayer().getInventory();
+		ItemStack item = inv.getItem(event.getNewSlot());
+		ItemStack newitem = announcePearl(event.getPlayer(), item);
 		if (newitem != null)
-			event.getPlayer().setItemInHand(newitem);
+			inv.setItem(event.getNewSlot(), newitem);
 	}
 	
 	private ItemStack announcePearl(Player player, ItemStack item) {
@@ -164,8 +166,8 @@ public class PrisonPearlManager implements Listener {
 		player.getInventory().setItemInHand(null);
 		event.setCancelled(true);
 		
-		freePlayer(pp.getImprisonedPlayer(), player.getLocation());
-		player.sendMessage("You've freed " + player.getName());
+		freePearl(pp, player.getLocation());
+		player.sendMessage("You've freed " + pp.getImprisonedName());
 	}
 	
 	// Free pearls when a player leaves

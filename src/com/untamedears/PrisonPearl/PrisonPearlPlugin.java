@@ -55,6 +55,21 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		pearlman = new PrisonPearlManager(this, pearls);
 		summonman = new SummonManager(this, pearls);
 		
+		File summonfile = getSummonFile();
+		try {
+			summonman.load(summonfile);
+		} catch (FileNotFoundException e) {
+			System.out.println("Prison pearls data file does not exist, creating.");
+
+			try {
+				pearls.save(summonfile);
+			} catch (IOException e2) {
+				throw new RuntimeException("Failed to create " + ppfile.getAbsolutePath(), e2);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to load prison pearls from " + ppfile.getAbsolutePath(), e);
+		}
+		
 		getServer().getPluginManager().registerEvents(this, this);
 		getCommand("pplocate").setExecutor(this);
 		getCommand("pplocateany").setExecutor(this);
@@ -82,7 +97,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			File file = getPrisonPearlsFile();
 			if (file.exists())
 				file.renameTo(new File(file.getAbsolutePath() + ".bak"));
-			pearls.save(getPrisonPearlsFile());
+			pearls.save(file);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to save prison pearls to " + getPrisonPearlsFile().getAbsolutePath(), e);
+		}
+		
+		try {
+			File file = getSummonFile();
+			if (file.exists())
+				file.renameTo(new File(file.getAbsolutePath() + ".bak"));
+			summonman.save(file);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to save prison pearls to " + getPrisonPearlsFile().getAbsolutePath(), e);
 		}
@@ -92,12 +116,20 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		return new File(getDataFolder(), "prisonpearls.txt");
 	}
 	
+	private File getSummonFile() {
+		return new File(getDataFolder(), "summons.txt");
+	}
+	
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
+		if (player.isDead())
+			return;
+		
 		Location newloc = playerSpawn(player, player.getLocation());
-		if (newloc != null)
+		if (newloc != null) {
 			player.teleport(newloc);
+		}
 	}
 	
 	@EventHandler(priority=EventPriority.HIGHEST)
@@ -189,6 +221,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	public void onSummonEvent(SummonEvent event) {
 		PrisonPearl pp = event.getPrisonPearl();
 		Player player = pp.getImprisonedPlayer();
+		if (player == null)
+			return;
 
 		switch (event.getType()) {
 		case SUMMONED:

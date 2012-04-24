@@ -83,6 +83,10 @@ public class PrisonPearlStorage {
 	}
 	
 	private void put(PrisonPearl pp) {
+		PrisonPearl old = pearls_byimprisoned.get(pp.getImprisonedName());
+		if (old != null)
+			pearls_byid.remove(old.getID());
+		
 		pearls_byid.put(pp.getID(), pp);
 		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
 	}
