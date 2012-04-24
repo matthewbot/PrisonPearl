@@ -36,20 +36,33 @@ public class PearlTagManager implements Runnable, Listener {
 		if (!(event.getDamager() instanceof Player && event.getEntity() instanceof Player))
 			return;
 
-		Player damager = (Player)event.getDamager();
-		Player player = (Player)event.getEntity();
+		Player taggerplayer = (Player)event.getDamager();
+		Player taggedplayer = (Player)event.getEntity();
 
-		ItemStack item = damager.getItemInHand();
-		if (item.getType() == Material.ENDER_PEARL && item.getDurability() == 0)
-			tag(player, damager);
+		ItemStack item = taggerplayer.getItemInHand();
+		if (item.getType() != Material.ENDER_PEARL || item.getDurability() != 0)
+			return;
+		
+		// generate a tag and make a new tag event
+		long expires = getNowTick() + plugin.getConfig().getInt("tag_ticks");
+		PearlTag tag = new PearlTag(taggedplayer, taggerplayer, expires);
+		if (!tagEvent(tag, PearlTagEvent.Type.NEW))
+			return;
+		
+		// if player is already tagged, remove them and generate switched events
+		eventTagsOnPlayer(taggedplayer, PearlTagEvent.Type.SWITCHED, taggerplayer, true);
+		
+		// then add the new tag and schedule the expire task
+		tags.add(tag);
+		scheduleExpireTask();
 	}
 	
 	// Expire tags when a player logs off
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
-		expireTags(player);
-		taggedLogged(player);
+		expireTagsHeldByPlayer(player);
+		eventTagsOnPlayer(player, PearlTagEvent.Type.EXPIRED, null, true);
 	}
 	
 	// Expire tags when a player dies
@@ -60,65 +73,11 @@ public class PearlTagManager implements Runnable, Listener {
 			return;
 
 		Player player = (Player)event.getEntity();
-		expireTags(player);
-		taggedKilled(player);
+		expireTagsHeldByPlayer(player);
+		eventTagsOnPlayer(player, PearlTagEvent.Type.KILLED, null, true);
 	}
 	
-	private void tag(Player taggedplayer, Player taggerplayer) {
-		// first, generate a tag switch event if this person is being re-tagged by someone else
-		Iterator<PearlTag> i = tags.iterator();
-		while (i.hasNext()) {
-			PearlTag tag = i.next();
-			if (tag.getTaggedPlayer() == taggedplayer) {
-				if (!tagEvent(tag, PearlTagEvent.Type.SWITCHED, taggerplayer))
-					return;
-				
-				i.remove();
-				break;
-			}
-		}
-		
-		// then, make the tag and generate a new tag event
-		long expires = getNowTick() + plugin.getConfig().getInt("tag_ticks");
-		PearlTag tag = new PearlTag(taggedplayer, taggerplayer, expires);
-		if (!tagEvent(tag, PearlTagEvent.Type.NEW))
-			return;
-		
-		tags.add(tag);
-		
-		// schedule the expire task
-		scheduleExpireTask();
-	}
-	
-	private PearlTag taggedKilled(Player taggedplayer) {
-		Iterator<PearlTag> i = tags.iterator();
-		while (i.hasNext()) {
-			PearlTag tag = i.next();
-			if (tag.getTaggedPlayer() == taggedplayer) {
-				i.remove();
-				tagEvent(tag, PearlTagEvent.Type.KILLED);
-				return tag;
-			}
-		}
-		
-		return null;
-	}
-	
-	private PearlTag taggedLogged(Player taggedplayer) {
-		Iterator<PearlTag> i = tags.iterator();
-		while (i.hasNext()) {
-			PearlTag tag = i.next();
-			if (tag.getTaggedPlayer() == taggedplayer) {
-				i.remove();
-				tagEvent(tag, PearlTagEvent.Type.LOGGED);
-				return tag;
-			}
-		}
-		
-		return null;
-	}
-	
-	private void expireTags(Player tagger) {
+	private void expireTagsHeldByPlayer(Player tagger) {
 		Iterator<PearlTag> i = tags.iterator();
 		while (i.hasNext()) {
 			PearlTag tag = i.next();
@@ -127,6 +86,18 @@ public class PearlTagManager implements Runnable, Listener {
 				tagEvent(tag, PearlTagEvent.Type.EXPIRED);
 			}
 		}		
+	}
+	
+	private void eventTagsOnPlayer(Player tagged, PearlTagEvent.Type type, Player other, boolean remove) {
+		Iterator<PearlTag> i = tags.iterator();
+		while (i.hasNext()) {
+			PearlTag tag = i.next();
+			if (tag.getTaggedPlayer() == tagged) {
+				if (remove)
+					i.remove();
+				tagEvent(tag, type, other);
+			}
+		}
 	}
 	
 	public void run() {
