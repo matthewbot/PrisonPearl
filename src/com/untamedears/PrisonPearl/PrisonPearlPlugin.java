@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -122,13 +123,20 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
-		Player player = event.getPlayer();
+		final Player player = event.getPlayer();
 		if (player.isDead())
 			return;
 		
-		Location newloc = playerSpawn(player, player.getLocation());
+		final Location newloc = playerSpawn(player, player.getLocation());
 		if (newloc != null) {
-			player.teleport(newloc);
+			// under very specific situations it seems like teleport directly in onPlayerJoin causes duplicate entities
+			Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
+				public Void call() {
+					player.teleport(newloc);
+					return null;
+				}
+			});
+			
 		}
 	}
 	
@@ -380,7 +388,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (pp == null)
 			return true;
 		
-		if (pp.getImprisonedPlayer() == player) {
+		if (pp.getImprisonedName().equals(player.getName())) {
 			sender.sendMessage("You cannot return yourself!");
 			return true;
 		} else if (!summonman.isSummoned(pp)) {
