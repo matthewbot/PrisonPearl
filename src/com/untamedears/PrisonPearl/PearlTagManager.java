@@ -48,7 +48,7 @@ public class PearlTagManager implements Runnable, Listener {
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
-		taggerExpired(player);
+		expireTags(player);
 		taggedLogged(player);
 	}
 	
@@ -60,7 +60,7 @@ public class PearlTagManager implements Runnable, Listener {
 			return;
 
 		Player player = (Player)event.getEntity();
-		taggerExpired(player);
+		expireTags(player);
 		taggedKilled(player);
 	}
 	
@@ -70,8 +70,10 @@ public class PearlTagManager implements Runnable, Listener {
 		while (i.hasNext()) {
 			PearlTag tag = i.next();
 			if (tag.getTaggedPlayer() == taggedplayer) {
+				if (!tagEvent(tag, PearlTagEvent.Type.SWITCHED, taggerplayer))
+					return;
+				
 				i.remove();
-				tagEvent(tag, PearlTagEvent.Type.SWITCHED, taggerplayer);
 				break;
 			}
 		}
@@ -79,8 +81,10 @@ public class PearlTagManager implements Runnable, Listener {
 		// then, make the tag and generate a new tag event
 		long expires = getNowTick() + plugin.getConfig().getInt("tag_ticks");
 		PearlTag tag = new PearlTag(taggedplayer, taggerplayer, expires);
+		if (!tagEvent(tag, PearlTagEvent.Type.NEW))
+			return;
+		
 		tags.add(tag);
-		tagEvent(tag, PearlTagEvent.Type.NEW);
 		
 		// schedule the expire task
 		scheduleExpireTask();
@@ -114,7 +118,7 @@ public class PearlTagManager implements Runnable, Listener {
 		return null;
 	}
 	
-	private void taggerExpired(Player tagger) {
+	private void expireTags(Player tagger) {
 		Iterator<PearlTag> i = tags.iterator();
 		while (i.hasNext()) {
 			PearlTag tag = i.next();
@@ -155,11 +159,15 @@ public class PearlTagManager implements Runnable, Listener {
 		return Bukkit.getWorlds().get(0).getFullTime();
 	}
 	
-	private void tagEvent(PearlTag tag, PearlTagEvent.Type type) {
-		Bukkit.getPluginManager().callEvent(new PearlTagEvent(tag, type, null));
+	private boolean tagEvent(PearlTag tag, PearlTagEvent.Type type) {
+		PearlTagEvent event = new PearlTagEvent(tag, type, null);
+		Bukkit.getPluginManager().callEvent(event);
+		return !event.isCancelled();
 	}
 	
-	private void tagEvent(PearlTag tag, PearlTagEvent.Type type, Player other) {
-		Bukkit.getPluginManager().callEvent(new PearlTagEvent(tag, type, other));
+	private boolean tagEvent(PearlTag tag, PearlTagEvent.Type type, Player other) {
+		PearlTagEvent event = new PearlTagEvent(tag, type, other);
+		Bukkit.getPluginManager().callEvent(event);
+		return !event.isCancelled();
 	}
 }

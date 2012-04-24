@@ -10,11 +10,13 @@ public class PearlTagEvent extends Event {
 	private PearlTag tag;
 	private Type type;
 	private Player other;
+	private boolean cancelled;
 	
 	public PearlTagEvent(PearlTag tag, Type type, Player other) {
 		this.tag = tag;
 		this.type = type;
 		this.other = other;
+		cancelled = false;
 	}
 	
 	public PearlTag getTag() {
@@ -27,6 +29,14 @@ public class PearlTagEvent extends Event {
 	
 	public Player getOtherPlayer() {
 		return other;
+	}
+	
+	public boolean isCancelled() {
+		return cancelled;
+	}
+	
+	public void setCancelled(boolean cancelled) {
+		this.cancelled = cancelled;
 	}
 	
 	private static final HandlerList handlers = new HandlerList();

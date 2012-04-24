@@ -178,6 +178,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		Player tagged = event.getTag().getTaggedPlayer();
 		Player other = event.getOtherPlayer();
 
+		if (event.getType() == PearlTagEvent.Type.NEW || event.getType() == PearlTagEvent.Type.SWITCHED) {
+			if (pearls.isImprisoned(tagger)) {
+				tagger.sendMessage("You cannot imprison someone while imprisoned yourself!");
+				event.setCancelled(true);
+				return;
+			}			
+		}
+		
 		switch (event.getType()) {
 		case NEW:
 			tagger.sendMessage("You've tagged " + tagged.getDisplayName() + " for imprisonment");
