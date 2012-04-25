@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
@@ -18,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
@@ -25,8 +27,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandExecutor {
-	@SuppressWarnings("unused")
-	private PearlTagManager tagman;
+	private DamageLogManager damageman;
 	private PrisonPearlManager pearlman;
 	private PrisonPearlStorage pearls;
 	private SummonManager summonman;
@@ -38,7 +39,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		pearls = new PrisonPearlStorage();
 		load(pearls, getPrisonPearlsFile());
 		
-		tagman = new PearlTagManager(this);
+		damageman = new DamageLogManager(this);
 		pearlman = new PrisonPearlManager(this, pearls);
 		summonman = new SummonManager(this, pearls);
 		load(summonman, getSummonFile());
@@ -153,56 +154,30 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		
 		return newloc;
 	}	
-
-	// Announce pearl tag events, and imprison players
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPearlTagEvent(PearlTagEvent event) {
-		Player tagger = event.getTag().getTaggerPlayer();
-		Player tagged = event.getTag().getTaggedPlayer();
-		Player other = event.getOtherPlayer();
-
-		if (event.getType() == PearlTagEvent.Type.NEW || event.getType() == PearlTagEvent.Type.SWITCHED) {
-			if (pearls.isImprisoned(tagger)) {
-				tagger.sendMessage("You cannot imprison someone while imprisoned yourself!");
-				event.setCancelled(true);
-				return;
-			}			
-		}
+	
+	@EventHandler(priority=EventPriority.HIGHEST)
+	public void onEntityDeath(EntityDeathEvent event) {
+		if (!(event.getEntity() instanceof Player))
+			return;
 		
-		boolean imprison = false;
-		switch (event.getType()) {
-		case NEW:
-			tagger.sendMessage("You've tagged " + tagged.getDisplayName() + " for imprisonment");
-			tagged.sendMessage("You've been tagged for imprisonment by " + tagger.getDisplayName());
-			break;
-			
-		case EXPIRED:
-			tagger.sendMessage("Your tag expired for " + tagged.getDisplayName());
-			tagged.sendMessage("You are no longer tagged by " + tagger.getDisplayName());
-			break;
-			
-		case SWITCHED:
-			tagger.sendMessage("Your tag for " + tagged.getDisplayName() + " is now owned by " + other.getDisplayName());
-			break;
+		Player player = (Player)event.getEntity();
+		List<Player> damagers = damageman.getDamagers(player);
+		if (damagers == null)
+			return;
 		
-		case QUIT:
-			if (getConfig().getBoolean("imprison_quit"))
-				imprison = true;
-			break;
-			
-		case KILLED:
-			imprison = true;
-			break;
-		}
-		
-		if (imprison) {
-			if (pearlman.imprisonPlayer(tagged, tagger)) {
-				tagger.sendMessage("You've bound " + tagged.getDisplayName() + " to a prison pearl!");
-				tagged.sendMessage("You've been bound to a prison pearl owned by " + tagger.getDisplayName());
-			} else {
-				tagger.sendMessage("You failed to imprison " + tagger.getDisplayName());
+		Player imprisoner = null;
+		for (Player damager : damagers) {
+			if (pearlman.imprisonPlayer(player, damager)) {
+				imprisoner = damager;
+				break;
 			}
 		}
+		
+		if (imprisoner == null)
+			return;
+		
+		imprisoner.sendMessage("You've bound " + player.getDisplayName() + " to a prison pearl!");
+		player.sendMessage("You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
 	}
 
 	// Announce prison pearl events
