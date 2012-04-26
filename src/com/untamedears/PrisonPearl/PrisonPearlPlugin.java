@@ -50,7 +50,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		pearlman = new PrisonPearlManager(this, pearls);
 		summonman = new SummonManager(this, pearls);
 		load(summonman, getSummonFile());
-		attachments = new HashMap<String, PermissionAttachment>();
 		
 		Bukkit.getPluginManager().registerEvents(this, this);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
@@ -81,12 +80,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			e.printStackTrace();
 		}
 		
+		attachments = new HashMap<String, PermissionAttachment>();
 		for (Player player : Bukkit.getOnlinePlayers())
 			updateAttachment(player);
 	}
 
 	public void onDisable() {
 		saveAll(true);
+		
+		for (PermissionAttachment attachment : attachments.values())
+			attachment.remove();
 	}
 	
 	private void saveAll(boolean force) {
@@ -158,7 +161,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		attachments.remove(event.getPlayer().getName());
+		PermissionAttachment attachment = attachments.remove(event.getPlayer().getName());
+		if (attachment != null)
+			attachment.remove();
 	}
 
 	// run player spawn logic in playerSpawn
@@ -295,17 +300,13 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 		
 		if (pearls.isImprisoned(player)) {
-			for (String grant : getConfig().getStringList("prison_grant_perms")) {
-				System.out.println("Granting " + grant + " to " + player.getName());
+			for (String grant : getConfig().getStringList("prison_grant_perms"))
 				attachment.setPermission(grant, true);
-			}
 			for (String deny : getConfig().getStringList("prison_deny_perms"))
 				attachment.setPermission(deny, false);			
 		} else {
-			for (String grant : getConfig().getStringList("prison_grant_perms")) {
-				System.out.println("Removing " + grant + " from " + player.getName());
+			for (String grant : getConfig().getStringList("prison_grant_perms"))
 				attachment.unsetPermission(grant);
-			}
 			for (String deny : getConfig().getStringList("prison_deny_perms"))
 				attachment.unsetPermission(deny);		
 		}
