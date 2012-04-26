@@ -86,7 +86,7 @@ public class PrisonPearlManager implements Listener {
 
 		PrisonPearl pp = pearls.newPearl(imprisoned, imprisoner); // create the prison pearl
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
-		imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // reset the player's normal spawn location
+		imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed (this could be optional)
 		
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.NEW)); // set off an event
 		return true;
@@ -103,7 +103,7 @@ public class PrisonPearlManager implements Listener {
 	
 	public void freePearl(PrisonPearl pp, Location loc) {
 		Player player = pp.getImprisonedPlayer();
-		if (player != null) {
+		if (player != null && !player.isDead()) {
 			World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
 			World prisonworld = Bukkit.getWorld(getConfig().getString("prison_world"));
 			

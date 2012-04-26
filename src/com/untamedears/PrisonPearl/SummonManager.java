@@ -94,7 +94,7 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 	
 	public boolean summonPearl(PrisonPearl pp, Location loc) {
 		Player player = pp.getImprisonedPlayer();
-		if (player == null)
+		if (player == null || player.isDead())
 			return false;
 		
 		summoned_pearls.put(player.getName(), player.getLocation());
@@ -109,7 +109,7 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 			return false;
 		
 		Player player = pp.getImprisonedPlayer();
-		if (player != null)
+		if (player != null && !player.isDead())
 			player.teleport(loc);
 		summonEvent(pp, SummonEvent.Type.RETURNED, loc);
 		return true;
