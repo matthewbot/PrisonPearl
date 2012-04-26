@@ -163,6 +163,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return;
 		
 		Player player = (Player)event.getEntity();
+		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
+		
+		if (player.getLocation().getWorld() == prison) // don't allow people to imprison other people while in the prison world
+			return;
+		
 		if (getConfig().getBoolean("prisonerstealing_enabled") == false && pearls.isImprisoned(player)) // bail if we can't steal prisoners and the guy is already imprisoned
 			return;
 		
