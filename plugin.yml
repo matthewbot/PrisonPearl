@@ -33,6 +33,11 @@ commands:
       description: Instantly kills a summoned player, sending them back to their prison pearl
       usage: /ppkill [player]
       
+   ppsave:
+      description: Saves all prisonpearl related data to disk
+      usage: /ppsave
+      permission: prisonpearl.save
+      
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands
@@ -40,10 +45,15 @@ permissions:
       children:
          prisonpearl.locateany: true
          prisonpearl.freeany: true
+         prisonpearl.save: true
 
    prisonpearl.locateany:
-      description: Allows user to locate prison pearls other than his own
+      description: Allows user to use pplocateany to locate prison pearls other than his own
       
    prisonpearl.freeany:
-      description: Allows user to free prison pearls he does not possess
+      description: Allows user to use ppfreeany to free prison pearls he does not possess
+      
+   prisonpearl.save:
+      description: Allows user to use ppsave command
+   
       

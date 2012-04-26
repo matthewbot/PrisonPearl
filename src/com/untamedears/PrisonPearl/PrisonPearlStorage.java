@@ -24,10 +24,16 @@ public class PrisonPearlStorage implements SaveLoad {
 	private Map<String, PrisonPearl> pearls_byimprisoned;
 	private short nextid;
 	
+	private boolean dirty;
+	
 	public PrisonPearlStorage() {
 		pearls_byid = new HashMap<Short, PrisonPearl>();
 		pearls_byimprisoned = new HashMap<String, PrisonPearl>();
 		nextid = 1;
+	}
+	
+	public boolean isDirty() {
+		return dirty;
 	}
 
 	public void load(File file) throws IOException {
@@ -51,6 +57,8 @@ public class PrisonPearlStorage implements SaveLoad {
 		}
 		
 		fis.close();
+		
+		dirty = false;
 	}
 	
 	public void save(File file) throws IOException {
@@ -69,6 +77,8 @@ public class PrisonPearlStorage implements SaveLoad {
 		
 		br.flush();
 		fos.close();
+		
+		dirty = false;
 	}
 	
 	public PrisonPearl newPearl(Player imprisoned, Player imprisoner) {
@@ -80,6 +90,7 @@ public class PrisonPearlStorage implements SaveLoad {
 	public void deletePearl(PrisonPearl pp) {
 		pearls_byid.remove(pp.getID());
 		pearls_byimprisoned.remove(pp.getImprisonedName());
+		dirty = true;
 	}
 	
 	public void addPearl(PrisonPearl pp) {
@@ -89,6 +100,7 @@ public class PrisonPearlStorage implements SaveLoad {
 		
 		pearls_byid.put(pp.getID(), pp);
 		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
+		dirty = true;
 	}
 	
 	public PrisonPearl getByID(short id) {

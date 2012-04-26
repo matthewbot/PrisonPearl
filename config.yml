@@ -14,3 +14,4 @@ prison_motd:
    - Type /pplocate to locate your pearl.
 prison_grant_perms:
    - RandomSpawn.exclude
+save_ticks: 2400

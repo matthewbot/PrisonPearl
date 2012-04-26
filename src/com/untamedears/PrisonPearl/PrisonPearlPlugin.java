@@ -17,6 +17,7 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -51,7 +52,13 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		load(summonman, getSummonFile());
 		attachments = new HashMap<String, PermissionAttachment>();
 		
-		getServer().getPluginManager().registerEvents(this, this);
+		Bukkit.getPluginManager().registerEvents(this, this);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+			public void run() {
+				saveAll(false);
+			}
+		}, 0, getConfig().getLong("save_ticks"));
+		
 		getCommand("pplocate").setExecutor(this);
 		getCommand("pplocateany").setExecutor(this);
 		getCommand("ppfree").setExecutor(this);
@@ -60,6 +67,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		getCommand("ppreturn").setExecutor(this);
 		if (getConfig().getBoolean("ppkill_enabled"))
 			getCommand("ppkill").setExecutor(this);
+		getCommand("ppsave").setExecutor(this);
 
 		// shamelessly swiped from bookworm, not sure why there isn't a Bukkit API for this
 		// this causes items to be stacked by their durability value
@@ -78,8 +86,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 
 	public void onDisable() {
-		save(pearls, getPrisonPearlsFile());
-		save(summonman, getSummonFile());
+		saveAll(true);
+	}
+	
+	private void saveAll(boolean force) {
+		if (force || pearls.isDirty())
+			save(pearls, getPrisonPearlsFile());
+		if (force || summonman.isDirty())
+			save(summonman, getSummonFile());
 	}
 	
 	private static void load(SaveLoad obj, File file) {
@@ -100,9 +114,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	private static void save(SaveLoad obj, File file) {
 		try {
-			if (file.exists())
-				file.renameTo(new File(file.getAbsolutePath() + ".bak"));
-			obj.save(file);
+			File newfile = new File(file.getAbsolutePath() + ".new");
+			File bakfile = new File(file.getAbsolutePath() + ".bak");
+			
+			obj.save(newfile);
+			if (file.exists() && !file.renameTo(bakfile))
+				throw new IOException("Failed to rename " + file.getAbsolutePath() + " to " + bakfile.getAbsolutePath());
+			if (!newfile.renameTo(file))
+				throw new IOException("Failed to rename " + newfile.getAbsolutePath() + " to " + file.getAbsolutePath());
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to save prison pearls to " + file.getAbsolutePath(), e);
 		}
@@ -310,6 +329,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return returnCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppkill")) {
 			return killCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppsave")) {
+			return saveCmd(sender, args);
 		}
 
 		return false;
@@ -472,6 +493,21 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		else
 			sender.sendMessage("You failed to kill " + pp.getImprisonedName());
 		return true;		
+	}
+	
+	private boolean saveCmd(CommandSender sender, String args[]) {
+		if (args.length > 0)
+			return false;
+		
+		try {
+			saveAll(false);
+			sender.sendMessage("PrisonPearl data saved!");
+			return true;
+		} catch (RuntimeException e) {
+			if (!(sender instanceof ConsoleCommandSender))
+				sender.sendMessage("PrisonPearl failed to save data! Check server logs!");
+			throw e;
+		}
 	}
 	
 	private PrisonPearl getCommandPearl(Player player, String args[]) {

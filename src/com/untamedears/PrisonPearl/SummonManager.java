@@ -21,11 +21,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 
-public class SummonManager implements Runnable, Listener, SaveLoad {
+public class SummonManager implements Listener, SaveLoad {
 	private PrisonPearlPlugin plugin;
 	private PrisonPearlStorage pearls;
 	
 	private Map<String, Location> summoned_pearls;
+	private boolean dirty;
 	
 	public SummonManager(PrisonPearlPlugin plugin, PrisonPearlStorage pearls) {
 		this.plugin = plugin;
@@ -34,7 +35,15 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 		summoned_pearls = new HashMap<String, Location>();
 		
 		Bukkit.getPluginManager().registerEvents(this, plugin);
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this, 0, plugin.getConfig().getInt("summon_damage_ticks"));
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
+			public void run() {
+				inflictSummonDamage();
+			}
+		}, 0, plugin.getConfig().getInt("summon_damage_ticks"));
+	}
+	
+	public boolean isDirty() {
+		return dirty;
 	}
 	
 	public void load(File file) throws NumberFormatException, IOException {
@@ -54,6 +63,7 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 		}
 		
 		fis.close();
+		dirty = false;
 	}
 	
 	public void save(File file) throws IOException {
@@ -67,9 +77,10 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 		
 		br.flush();
 		fos.close();
+		dirty = false;
 	}
 	
-	public void run() {
+	private void inflictSummonDamage() {
 		Iterator<Entry<String, Location>> i = summoned_pearls.entrySet().iterator();
 		while (i.hasNext()) {
 			Entry<String, Location> entry = i.next();
@@ -77,6 +88,7 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 			if (pp == null) {
 				System.err.println("Somehow " + entry.getKey() + " got summoned but isn't imprisoned");
 				i.remove();
+				dirty = true;
 				continue;
 			}
 			
@@ -101,28 +113,36 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 			return false;
 		
 		summoned_pearls.put(player.getName(), player.getLocation());
+		dirty = true;
 		return true;
 	}
 	
 	public boolean returnPearl(PrisonPearl pp) {
 		Location loc = summoned_pearls.remove(pp.getImprisonedName());
-		if (loc == null || pp.getImprisonedPlayer().isDead())
+		if (loc == null)
 			return false;
 		
-		if (!summonEvent(pp, SummonEvent.Type.RETURNED, loc))
+		if (!summonEvent(pp, SummonEvent.Type.RETURNED, loc)) {
+			summoned_pearls.put(pp.getImprisonedName(), loc);
 			return false;
-
+		}
+		
+		dirty = true;
 		return true;
 	}
 	
 	public boolean killPearl(PrisonPearl pp) {
-		if (summoned_pearls.remove(pp.getImprisonedName()) == null)
+		Location loc = summoned_pearls.remove(pp.getImprisonedName());
+		if (loc == null)
 			return false;
 		
-		if (!summonEvent(pp, SummonEvent.Type.KILLED))
+		if (!summonEvent(pp, SummonEvent.Type.KILLED)) {
+			summoned_pearls.put(pp.getImprisonedName(), loc);
 			return false;
+		}
 		
 		pp.getImprisonedPlayer().setHealth(0);
+		dirty = true;
 		return true;
 	}
 	
@@ -143,6 +163,7 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 		if (!isSummoned(player))
 			return;
 		summoned_pearls.remove(player.getName());
+		dirty = true;
 		
 		PrisonPearl pp = pearls.getByImprisoned(player);
 		if (pp != null)
@@ -153,6 +174,7 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 	public void onPrisonPearlEvent(PrisonPearlEvent event) {
 		if (event.getType() == PrisonPearlEvent.Type.FREED) {
 			summoned_pearls.remove(event.getPrisonPearl().getImprisonedName());
+			dirty = true;
 		}
 	}
 	
