@@ -152,7 +152,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			// under very specific situations it seems like teleport directly in onPlayerJoin causes duplicate entities
 			Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
 				public Void call() {
-					player.teleport(newloc);
+					World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
+					
+					// If we're configured to respawn players who were free'd offline, and this player
+					// needs to be moved to the real world (was freed)
+					if (getConfig().getBoolean("free_offline_respawn") && newloc.getWorld() == respawn)
+						player.setHealth(0); // kill them, to trigger the respawn
+					else
+						player.teleport(newloc); // otherwise, teleport them where they need t obe
 					return null;
 				}
 			});
@@ -189,8 +196,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 					player.sendMessage(line);
 			}
 		} else if (spawnloc.getWorld() == prison) { // not imprisoned, but spawning in prison?
-			newloc = respawn.getSpawnLocation(); // he must've been free'd while offline, change location to spawn
-			player.sendMessage("While away, you were freed!");
+			newloc = player.getBedSpawnLocation(); // he must've been free'd while offline, change location to bed spawn
+			if (newloc == null)
+				newloc = respawn.getSpawnLocation(); // failing that, use the respawn world
+			player.sendMessage("You were freed!");
 		}		
 		
 		return newloc;
