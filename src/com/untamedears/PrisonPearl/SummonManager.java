@@ -149,6 +149,13 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 			summonEvent(pp, SummonEvent.Type.DIED);
 	}
 	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPrisonPearlEvent(PrisonPearlEvent event) {
+		if (event.getType() == PrisonPearlEvent.Type.FREED) {
+			summoned_pearls.remove(event.getPrisonPearl().getImprisonedName());
+		}
+	}
+	
 	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type) {
 		return summonEvent(pp, type, null);
 	}
