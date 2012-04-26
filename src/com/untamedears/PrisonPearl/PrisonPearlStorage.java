@@ -64,7 +64,7 @@ public class PrisonPearlStorage implements SaveLoad {
 				continue;
 			
 			Location loc = pp.getLocation();
-			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ());
+			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
 		}
 		
 		br.flush();
