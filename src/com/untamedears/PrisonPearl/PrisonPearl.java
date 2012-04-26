@@ -64,12 +64,14 @@ public class PrisonPearl {
 			} else if (holder instanceof DoubleChest) {
 				return ((DoubleChest)holder).getLocation();
 			} else {
-				return null; // TODO log these 
+				System.err.println("PrisonPearl " + id + " has an unexpected holder: " + holder);
+				return new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
 			}
 		} else if (item != null) {
 			return item.getLocation();
 		} else {
-			return null; // TODO log these
+			System.err.println("PrisonPearl " + id + " has no holder nor item");
+			return new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
 		}
 	}
 	
@@ -80,7 +82,8 @@ public class PrisonPearl {
 			if (entity instanceof Player) {
 				return ((Player)entity).getDisplayName();
 			} else {
-				return "an unknown entity"; // TODO log these
+				System.err.println("PrisonPearl " + id + " is held by a non-player entity");
+				return "an unknown entity";
 			}
 		} else if ((state = getHolderBlockState()) != null) {
 			switch (state.getType()) {
@@ -93,10 +96,12 @@ public class PrisonPearl {
 			case DISPENSER:
 				return "a dispenser";
 			default:
-				return "an unknown block"; // TODO log these
+				System.err.println("PrisonPearl " + id + " is inside an unknown block");
+				return "an unknown block"; 
 			}
 		} else {
-			return null; // TODO log these (really shouldn't happen)
+			System.err.println("PrisonPearl " + id + " has no holder nor item");
+			return "unknown"; 
 		}
 	}
 	
