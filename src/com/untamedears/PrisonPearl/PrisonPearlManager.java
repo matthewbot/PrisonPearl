@@ -90,7 +90,9 @@ public class PrisonPearlManager implements Listener {
 		}
 
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
-		imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed (this could be optional)
+		
+		if (getConfig().getBoolean("resetbed_enabled"))
+			imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed
 		return true;
 	}
 	
