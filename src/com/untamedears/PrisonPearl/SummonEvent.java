@@ -11,6 +11,8 @@ public class SummonEvent extends Event {
 	private Type type;
 	private Location location;
 	
+	private boolean cancelled;
+	
 	public SummonEvent(PrisonPearl pp, Type type) {
 		this.pp = pp;
 		this.type = type;
@@ -32,6 +34,14 @@ public class SummonEvent extends Event {
 	
 	public Location getLocation() {
 		return location;
+	}
+
+	public boolean isCancelled() {
+		return cancelled;
+	}
+	
+	public void setCancelled(boolean cancelled) {
+		this.cancelled = cancelled;
 	}
 	
 	private static final HandlerList handlers = new HandlerList();

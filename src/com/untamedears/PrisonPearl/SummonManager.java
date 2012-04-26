@@ -97,21 +97,21 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 		if (player == null || player.isDead())
 			return false;
 		
+		if (!summonEvent(pp, SummonEvent.Type.SUMMONED, loc))
+			return false;
+		
 		summoned_pearls.put(player.getName(), player.getLocation());
-		player.teleport(loc);
-		summonEvent(pp, SummonEvent.Type.SUMMONED, loc);
 		return true;
 	}
 	
 	public boolean returnPearl(PrisonPearl pp) {
 		Location loc = summoned_pearls.remove(pp.getImprisonedName());
-		if (loc == null)
+		if (loc == null || pp.getImprisonedPlayer().isDead())
 			return false;
 		
-		Player player = pp.getImprisonedPlayer();
-		if (player != null && !player.isDead())
-			player.teleport(loc);
-		summonEvent(pp, SummonEvent.Type.RETURNED, loc);
+		if (!summonEvent(pp, SummonEvent.Type.RETURNED, loc))
+			return false;
+
 		return true;
 	}
 	
@@ -119,8 +119,10 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 		if (summoned_pearls.remove(pp.getImprisonedName()) == null)
 			return false;
 		
+		if (!summonEvent(pp, SummonEvent.Type.KILLED))
+			return false;
+		
 		pp.getImprisonedPlayer().setHealth(0);
-		summonEvent(pp, SummonEvent.Type.KILLED);
 		return true;
 	}
 	
@@ -147,11 +149,13 @@ public class SummonManager implements Runnable, Listener, SaveLoad {
 			summonEvent(pp, SummonEvent.Type.DIED);
 	}
 	
-	private void summonEvent(PrisonPearl pp, SummonEvent.Type type) {
-		Bukkit.getPluginManager().callEvent(new SummonEvent(pp, type, null));
+	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type) {
+		return summonEvent(pp, type, null);
 	}
 	
-	private void summonEvent(PrisonPearl pp, SummonEvent.Type type, Location loc) {
-		Bukkit.getPluginManager().callEvent(new SummonEvent(pp, type, loc));
+	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type, Location loc) {
+		SummonEvent event = new SummonEvent(pp, type, loc);
+		Bukkit.getPluginManager().callEvent(event);
+		return !event.isCancelled();
 	}
 }

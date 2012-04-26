@@ -4,7 +4,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
@@ -83,40 +82,31 @@ public class PrisonPearlManager implements Listener {
 				pearlnum = stacknum; // then overwrite his stack of pearls
 			}
 		}
+	
+		PrisonPearl pp = pearls.newPearl(imprisoned, imprisoner); // create the prison pearl		
+		if (!prisonPearlEvent(pp, PrisonPearlEvent.Type.NEW, imprisoner)) { // set off an event
+			pearls.deletePearl(pp);
+			return false;
+		}
 
-		PrisonPearl pp = pearls.newPearl(imprisoned, imprisoner); // create the prison pearl
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
 		imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed (this could be optional)
-		
-		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.NEW)); // set off an event
 		return true;
 	}
 	
-	public boolean freePlayer(Player player, Location loc) {
+	public boolean freePlayer(Player player) {
 		PrisonPearl pp = pearls.getByImprisoned(player);
 		if (pp == null)
 			return false;
 		
-		freePearl(pp, loc);
-		return true;
+		return freePearl(pp);
 	}
 	
-	public void freePearl(PrisonPearl pp, Location loc) {
-		Player player = pp.getImprisonedPlayer();
-		if (player != null && !player.isDead()) {
-			World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
-			World prisonworld = Bukkit.getWorld(getConfig().getString("prison_world"));
-			
-			if (player.getLocation().getWorld() == prisonworld) {
-				if (loc == null || loc.getWorld() == prisonworld)
-					player.teleport(respawnworld.getSpawnLocation());
-				else
-					player.teleport(loc);
-			}
-		}
-		
-		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.FREED, loc)); // set off an event
+	public boolean freePearl(PrisonPearl pp) {
+		if (!prisonPearlEvent(pp, PrisonPearlEvent.Type.FREED)) // set off an event
+			return false;
 		pearls.deletePearl(pp);
+		return true;
 	}
 
 	// Announce the person in a pearl when a player holds it
@@ -166,15 +156,13 @@ public class PrisonPearlManager implements Listener {
 		player.getInventory().setItemInHand(null);
 		event.setCancelled(true);
 		
-		freePearl(pp, player.getLocation());
+		freePearl(pp);
 		player.sendMessage("You've freed " + pp.getImprisonedName());
 	}
 	
 	// Free pearls when a player leaves
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		Player player = event.getPlayer();
-
 		Inventory inv = event.getPlayer().getInventory();
 		for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
 			int slot = entry.getKey();
@@ -182,8 +170,8 @@ public class PrisonPearlManager implements Listener {
 			if (pp == null)
 				continue;
 
-			freePearl(pp, player.getLocation());
-			inv.setItem(slot, null);
+			if (freePearl(pp))
+				inv.setItem(slot, null);
 		}
 	}
 	
@@ -194,7 +182,7 @@ public class PrisonPearlManager implements Listener {
 		if (pp == null)
 			return;
 
-		freePearl(pp, event.getEntity().getLocation());
+		freePearl(pp);
 	}
 
 	// Free the pearl if its on a chunk that unloads
@@ -211,8 +199,8 @@ public class PrisonPearlManager implements Listener {
 			final Entity entity = e;
 			Bukkit.getScheduler().callSyncMethod(plugin, new Callable<Void>() { // doing this in onChunkUnload causes weird things to happen
 				public Void call() throws Exception {
-					freePearl(pp, entity.getLocation());
-					entity.remove();
+					if (freePearl(pp))
+						entity.remove();
 					return null;
 				}	
 			});
@@ -231,7 +219,7 @@ public class PrisonPearlManager implements Listener {
 		if (pp == null)
 			return;
 
-		freePearl(pp, event.getEntity().getLocation());
+		freePearl(pp);
 	}
 	
 	// Track the location of a pearl
@@ -292,6 +280,16 @@ public class PrisonPearlManager implements Listener {
 	private void updatePearl(PrisonPearl pp, InventoryHolder holder) {
 		pp.setHolder(holder);
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.HELD));
+	}
+	
+	private boolean prisonPearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type) {
+		return prisonPearlEvent(pp, type, null);
+	}
+	
+	private boolean prisonPearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type, Player imprisoner) {
+		PrisonPearlEvent event = new PrisonPearlEvent(pp, type, imprisoner);
+		Bukkit.getPluginManager().callEvent(event);
+		return !event.isCancelled();
 	}
 	
 	private Configuration getConfig() {

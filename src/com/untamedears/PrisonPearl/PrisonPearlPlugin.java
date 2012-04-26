@@ -150,63 +150,74 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			}
 		} else if (spawnloc.getWorld() == prison) { // not imprisoned, but spawning in prison?
 			newloc = respawn.getSpawnLocation(); // he must've been free'd while offline, change location to spawn
-			player.sendMessage("You've been freed!");
+			player.sendMessage("While away, you were freed!");
 		}		
 		
 		return newloc;
 	}	
 	
+	// Imprison people upon death
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onEntityDeath(EntityDeathEvent event) {
 		if (!(event.getEntity() instanceof Player))
 			return;
 		
 		Player player = (Player)event.getEntity();
-		if (getConfig().getBoolean("prisonerstealing_enabled") == false && pearls.isImprisoned(player))
+		if (getConfig().getBoolean("prisonerstealing_enabled") == false && pearls.isImprisoned(player)) // bail if we can't steal prisoners and the guy is already imprisoned
 			return;
 		
-		List<Player> damagers = damageman.getDamagers(player);
+		List<Player> damagers = damageman.getDamagers(player); // get all the players who helped kill this guy
 		if (damagers == null)
 			return;
 		
-		Player imprisoner = null;
-		for (Player damager : damagers) {
-			if (pearlman.imprisonPlayer(player, damager)) {
-				imprisoner = damager;
+		for (Player damager : damagers) { // check to see if anyone can imprison him
+			if (pearlman.imprisonPlayer(player, damager))
 				break;
-			}
 		}
-		
-		if (imprisoner == null)
-			return;
-		
-		imprisoner.sendMessage("You've bound " + player.getDisplayName() + " to a prison pearl!");
-		player.sendMessage("You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
 	}
 
 	// Announce prison pearl events
+	// Teleport players when freed
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPrisonPearlEvent(PrisonPearlEvent event) {
+		if (event.isCancelled())
+			return;
+		
 		PrisonPearl pp = event.getPrisonPearl();
 		Player player = pp.getImprisonedPlayer();
-		if (player == null || player.isDead()) // player not online or dead?
-			return; // gets no intel then
+		if (player == null)
+			return;
 		
-		switch (event.getType()) {
-		case HELD:
-		case DROPPED:
+		if (event.getType() == PrisonPearlEvent.Type.NEW) { 
+			Player imprisoner = event.getImprisoner();
+			imprisoner.sendMessage("You've bound " + player.getDisplayName() + " to a prison pearl!");
+			player.sendMessage("You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
+		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
 			player.sendMessage("Your prison pearl is " + pp.describeLocation());
-			break;
+		} else if (event.getType() == PrisonPearlEvent.Type.FREED) {
+			World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
+			World prisonworld = Bukkit.getWorld(getConfig().getString("prison_world"));
 			
-		case FREED:
+			if (player.getLocation().getWorld() == prisonworld) {
+				Location loc = pp.getLocation();
+				if (loc == null || loc.getWorld() == prisonworld) 
+					loc = respawnworld.getSpawnLocation();
+				
+				if (!player.isDead())
+					player.teleport(loc);
+			}
+			
 			player.sendMessage("You've been freed!");
-			break;
 		}
 	}
 	
 	// Announce summon events
+	// Teleport player when summoned or returned
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onSummonEvent(SummonEvent event) {
+		if (event.isCancelled())
+			return;
+		
 		PrisonPearl pp = event.getPrisonPearl();
 		Player player = pp.getImprisonedPlayer();
 		if (player == null)
@@ -215,10 +226,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		switch (event.getType()) {
 		case SUMMONED:
 			player.sendMessage("You've been summoned to your prison pearl!");
+			player.teleport(event.getLocation());
 			break;
 			
 		case RETURNED:
 			player.sendMessage("You've been returned to your prison");
+			player.teleport(event.getLocation());
 			break;
 			
 		case KILLED:
@@ -285,7 +298,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	private boolean freeCmd(CommandSender sender, String args[], boolean any) {
 		PrisonPearl pp;
-		Location loc = null;
 		
 		if (!any) {
 			if (args.length > 1)
@@ -297,7 +309,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			}
 			
 			Player player = (Player)sender;
-			loc = player.getLocation();
 			
 			int slot = getCommandPearlSlot(player, args);
 			if (slot == -1)
@@ -320,7 +331,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (pp.getImprisonedPlayer() != sender)
 			sender.sendMessage("You've freed " + pp.getImprisonedName());
 		
-		pearlman.freePearl(pp, loc);	
+		pearlman.freePearl(pp);	
 		return true;
 	}
 	

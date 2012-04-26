@@ -65,13 +65,13 @@ public class PrisonPearl {
 				return ((DoubleChest)holder).getLocation();
 			} else {
 				System.err.println("PrisonPearl " + id + " has an unexpected holder: " + holder);
-				return new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
+				return null;
 			}
 		} else if (item != null) {
 			return item.getLocation();
 		} else {
 			System.err.println("PrisonPearl " + id + " has no holder nor item");
-			return new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
+			return null;
 		}
 	}
 	
