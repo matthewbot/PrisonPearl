@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Wolf;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -44,10 +45,22 @@ public class DamageLogManager implements Runnable, Listener {
 	// Create damage logs
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-		if (!(event.getDamager() instanceof Player && event.getEntity() instanceof Player))
+		if (!(event.getEntity() instanceof Player))
 			return;
 		
-		recordDamage((Player)event.getEntity(), (Player)event.getDamager(), event.getDamage());
+		Player damager = null;
+		if (event.getDamager() instanceof Player) {
+			damager = (Player)event.getDamager();
+		} else if (event.getDamager() instanceof Wolf) {
+			Wolf wolf = (Wolf)event.getDamager();
+			if (wolf.getOwner() instanceof Player)
+				damager = (Player)wolf.getOwner();
+		}
+		
+		if (damager == null)
+			return;
+		
+		recordDamage((Player)event.getEntity(), damager, event.getDamage());
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
