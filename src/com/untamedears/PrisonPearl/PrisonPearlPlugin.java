@@ -51,7 +51,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		getCommand("ppfreeany").setExecutor(this);
 		getCommand("ppsummon").setExecutor(this);
 		getCommand("ppreturn").setExecutor(this);
-		getCommand("ppkill").setExecutor(this);
+		if (getConfig().getBoolean("ppkill_enabled"))
+			getCommand("ppkill").setExecutor(this);
 
 		// shamelessly swiped from bookworm, not sure why there isn't a Bukkit API for this
 		// this causes items to be stacked by their durability value
@@ -161,6 +162,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return;
 		
 		Player player = (Player)event.getEntity();
+		if (getConfig().getBoolean("prisonerstealing_enabled") == false && pearls.isImprisoned(player))
+			return;
+		
 		List<Player> damagers = damageman.getDamagers(player);
 		if (damagers == null)
 			return;

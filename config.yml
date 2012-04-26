@@ -1,6 +1,8 @@
 respawn_world: world
-damage_min: 3
-damage_ticks: 600
+damagelog_min: 3
+damagelog_ticks: 600
+ppkill_enabled: true
+prisonerstealing_enabled: true
 summon_damage_radius: 20
 summon_damage_ticks: 20
 summon_damage_amt: 2

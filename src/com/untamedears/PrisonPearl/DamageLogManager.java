@@ -37,7 +37,7 @@ public class DamageLogManager implements Runnable, Listener {
 	public List<Player> getDamagers(Player player) {
 		DamageLog log = logs.get(player.getName());
 		if (log != null)
-			return log.getDamagers(plugin.getConfig().getInt("damage_min"));
+			return log.getDamagers(plugin.getConfig().getInt("damagelog_min"));
 		else
 			return null;
 	}
@@ -104,7 +104,7 @@ public class DamageLogManager implements Runnable, Listener {
 			logs.put(player.getName(), log);
 		}
 		
-		long ticks = plugin.getConfig().getInt("damage_ticks");
+		long ticks = plugin.getConfig().getInt("damagelog_ticks");
 		log.recordDamage(damager, amt, getNowTick() + ticks);
 		scheduleExpireTask(ticks);
 	}
@@ -130,7 +130,7 @@ public class DamageLogManager implements Runnable, Listener {
 			DamageLog log = i.next();
 			long remaining = nowtick-log.getExpiresTick();
 			
-			if (remaining <= plugin.getConfig().getInt("damage_ticks")/20) {
+			if (remaining <= plugin.getConfig().getInt("damagelog_ticks")/20) {
 				i.remove();
 				ctr++;
 				continue;
