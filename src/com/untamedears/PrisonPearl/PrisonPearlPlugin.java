@@ -138,7 +138,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		return new File(getDataFolder(), "summons.txt");
 	}
 	
-	// go through player spawn logic in playerSpawn, teleport them as needed
+	// Free player if he was free'd while offline
+	// otherwise, correct his spawn location if necessary
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
@@ -147,22 +148,26 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (player.isDead())
 			return;
 		
-		final Location newloc = playerSpawn(player, player.getLocation());
-		if (newloc != null) {
-			// under very specific situations it seems like teleport directly in onPlayerJoin causes duplicate entities
-			Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
-				public Void call() {
-					World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
-					
-					// If we're configured to respawn players who were free'd offline, and this player
-					// needs to be moved to the real world (was freed)
-					if (getConfig().getBoolean("free_offline_respawn") && newloc.getWorld() == respawn)
-						player.setHealth(0); // kill them, to trigger the respawn
-					else
-						player.teleport(newloc); // otherwise, teleport them where they need t obe
-					return null;
-				}
-			});
+		prisonMotd(player); 
+		
+		// determine if this player has been freed
+		if (player.getLocation().getWorld() == getPrisonWorld() && !pearls.isImprisoned(player)) { // if in prison but not imprisoned
+			player.sendMessage("While away, you were freed!"); // he was freed offline
+	
+			final Location newloc = getRespawnLocation(player, player.getLocation()); // get his correct spawn location
+			if (newloc == RESPAWN_PLAYER) { // if we're supposed to respawn him
+				player.setHealth(0); // set his health to zero
+			} else if (newloc != null) {
+				// under very specific situations it seems like teleport directly in onPlayerJoin causes duplicate entities
+				Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
+					public Void call() {
+						player.teleport(newloc); // teleport him there
+						return null;
+					}
+				});
+			} else {
+				System.err.println("Player " + player.getName() + " freed while offline, but getPlayerSpawnLocation didn't modify his position");
+			}
 		}
 	}
 	
@@ -176,34 +181,40 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	// run player spawn logic in playerSpawn
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		Location newloc = playerSpawn(event.getPlayer(), event.getRespawnLocation());
-		if (newloc != null)
+		prisonMotd(event.getPlayer());
+		Location newloc = getRespawnLocation(event.getPlayer(), event.getRespawnLocation());
+		if (newloc != null && newloc != RESPAWN_PLAYER)
 			event.setRespawnLocation(newloc);
 	}
 	
-	// tp people in and out of the prison world
-	private Location playerSpawn(Player player, Location spawnloc) {
-		World respawn = Bukkit.getWorld(getConfig().getString("respawn_world"));
-		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
-		Location newloc=null;
-		
-		if (pearls.isImprisoned(player)) { // if player is imprisoned
-			if (!summonman.isSummoned(player)) { // and not summoned
-				if (spawnloc.getWorld() != prison) // make sure he spawns in the prison world
-					newloc = prison.getSpawnLocation();
-				
-				for (String line : getConfig().getStringList("prison_motd")) // give him prison_motd
-					player.sendMessage(line);
-			}
-		} else if (spawnloc.getWorld() == prison) { // not imprisoned, but spawning in prison?
-			newloc = player.getBedSpawnLocation(); // he must've been free'd while offline, change location to bed spawn
-			if (newloc == null)
-				newloc = respawn.getSpawnLocation(); // failing that, use the respawn world
-			player.sendMessage("You were freed!");
-		}		
-		
-		return newloc;
+	// called when a player joins or spawns
+	// returns true if the player was freed while offline
+	private void prisonMotd(Player player) {
+		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if player is imprisoned
+			for (String line : getConfig().getStringList("prison_motd")) // give him prison_motd
+				player.sendMessage(line);
+		}
 	}	
+	
+	private static Location RESPAWN_PLAYER = new Location(null, 0, 0, 0);
+	
+	// gets where the player should be respawned at
+	// returns null if the curloc is an acceptable respawn location
+	private Location getRespawnLocation(Player player, Location curloc) {	
+		if (pearls.isImprisoned(player)) { // if player is imprisoned
+			if (curloc.getWorld() != getPrisonWorld()) // but not in prison world
+				return getPrisonWorld().getSpawnLocation();	// he should respawn in prison
+		} else if (curloc.getWorld() == getPrisonWorld()) { // not imprisoned, but spawning in prison?
+			if (getConfig().getBoolean("free_respawn")) // if we free players by respawning them
+				return RESPAWN_PLAYER; // kill the player
+			else if (player.getBedSpawnLocation() != null) // otherwise, if he's got a bed
+				return player.getBedSpawnLocation(); // spawn him there
+			else
+				return getFreeWorld().getSpawnLocation(); // otherwise, respawn him at the spawn of the free world
+		}
+		
+		return null; // don't modify respawn location
+	}
 	
 	// Imprison people upon death
 	@EventHandler(priority=EventPriority.HIGHEST)
@@ -212,9 +223,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return;
 		
 		Player player = (Player)event.getEntity();
-		World prison = Bukkit.getWorld(getConfig().getString("prison_world"));
 		
-		if (player.getLocation().getWorld() == prison) // don't allow people to imprison other people while in the prison world
+		if (player.getLocation().getWorld() == getPrisonWorld()) // don't allow people to imprison other people while in the prison world
 			return;
 		
 		PrisonPearl pp = pearls.getByImprisoned(player);
@@ -256,16 +266,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		} else if (event.getType() == PrisonPearlEvent.Type.FREED) {
 			updateAttachment(player);
 			
-			World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
-			World prisonworld = Bukkit.getWorld(getConfig().getString("prison_world"));
-			
-			if (player.getLocation().getWorld() == prisonworld) {
-				Location loc = pp.getLocation();
-				if (loc == null || loc.getWorld() == prisonworld) 
-					loc = respawnworld.getSpawnLocation();
+			if (!player.isDead() && player.getLocation().getWorld() == getPrisonWorld()) { // if the player isn't dead and is in prison world
+				Location loc = pp.getLocation(); // get the location of the pearl
+				if (loc == null)
+					loc = getRespawnLocation(player, player.getLocation()); // pearl has no location for some reason, get a spawn location for the player
 				
-				if (!player.isDead())
-					player.teleport(loc);
+				if (loc == RESPAWN_PLAYER) { // if we're supposed to respawn the player
+					player.setHealth(0); // kill him
+				} else {
+					player.teleport(loc); // otherwise teleport
+				}
 			}
 			
 			player.sendMessage("You've been freed!");
@@ -555,5 +565,13 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			player.sendMessage("You don't possess " + args[0] + "'s prison pearl");
 			return -1;
 		}
+	}
+	
+	private World getFreeWorld() {
+		return Bukkit.getWorld(getConfig().getString("free_world"));
+	}
+	
+	private World getPrisonWorld() {
+		return Bukkit.getWorld(getConfig().getString("prison_world"));
 	}
 }

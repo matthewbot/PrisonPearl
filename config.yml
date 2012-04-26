@@ -1,7 +1,7 @@
-respawn_world: world
+free_world: world
+free_respawn: true
 damagelog_min: 3
 damagelog_ticks: 600
-free_offline_respawn: true
 ppkill_enabled: true
 prisonerstealing_enabled: true
 resetbed_enable: false
