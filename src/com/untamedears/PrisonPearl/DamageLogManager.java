@@ -6,12 +6,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class DamageLogManager implements Runnable, Listener {
 	private PrisonPearlPlugin plugin;
@@ -42,9 +47,44 @@ public class DamageLogManager implements Runnable, Listener {
 		if (!(event.getDamager() instanceof Player && event.getEntity() instanceof Player))
 			return;
 		
-		Player player = (Player)event.getEntity();
-		Player damager = (Player)event.getDamager();
-
+		recordDamage((Player)event.getEntity(), (Player)event.getDamager(), event.getDamage());
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPotionSplashEvent(PotionSplashEvent event) {
+		LivingEntity shooter = event.getPotion().getShooter();
+		if (!(shooter instanceof Player))
+			return;
+		Player damager = (Player)shooter;
+		
+		// So, the idea here is because we can't really determine how much damage a potion actually caused
+		// somebody (like poison, weakness, or the API doesn't even seem to tell you the difference between harm I and harm II),
+		// we just award 6 damage points to the thrower as long as the potion is sufficiently bad.
+		int damage = 6;
+		
+		boolean badpotion=false;
+		for (PotionEffect effect : event.getPotion().getEffects()) {
+			System.out.println(effect.getType());
+			
+			// apparently these aren't really enums, because == doesn't work
+			if (effect.getType().equals(PotionEffectType.HARM) || effect.getType().equals(PotionEffectType.POISON) || effect.getType().equals(PotionEffectType.WEAKNESS)) {
+				badpotion = true;
+				break;
+			}
+		}
+		
+		if (!badpotion) // don't award damage for helpful or do-nothing potions, to prevent pearl stealing
+			return;
+		
+		for (Entity entity : event.getAffectedEntities()) {
+			if (!(entity instanceof Player))
+				continue;
+			
+			recordDamage((Player)entity, damager, damage);
+		}
+	}
+	
+	private void recordDamage(Player player, Player damager, int amt) {
 		DamageLog log = logs.get(player.getName());
 		if (log == null) {
 			log = new DamageLog(player);
@@ -52,7 +92,7 @@ public class DamageLogManager implements Runnable, Listener {
 		}
 		
 		long ticks = plugin.getConfig().getInt("damage_ticks");
-		log.recordDamage(damager, event.getDamage(), getNowTick() + ticks);
+		log.recordDamage(damager, amt, getNowTick() + ticks);
 		scheduleExpireTask(ticks);
 	}
 	
