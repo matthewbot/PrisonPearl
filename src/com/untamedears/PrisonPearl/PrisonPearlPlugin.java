@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
@@ -21,9 +23,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandExecutor {
@@ -31,6 +35,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	private PrisonPearlManager pearlman;
 	private PrisonPearlStorage pearls;
 	private SummonManager summonman;
+	
+	private Map<String, PermissionAttachment> attachments;
 
 	public void onEnable() {
 		getConfig().options().copyDefaults(true);
@@ -43,6 +49,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		pearlman = new PrisonPearlManager(this, pearls);
 		summonman = new SummonManager(this, pearls);
 		load(summonman, getSummonFile());
+		attachments = new HashMap<String, PermissionAttachment>();
 		
 		getServer().getPluginManager().registerEvents(this, this);
 		getCommand("pplocate").setExecutor(this);
@@ -65,6 +72,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		for (Player player : Bukkit.getOnlinePlayers())
+			updateAttachment(player);
 	}
 
 	public void onDisable() {
@@ -110,6 +120,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
+		updateAttachment(player);
+		
 		if (player.isDead())
 			return;
 		
@@ -125,6 +137,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 	}
 	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerQuit(PlayerQuitEvent event) {
+		attachments.remove(event.getPlayer().getName());
+	}
+
 	// run player spawn logic in playerSpawn
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
@@ -195,13 +212,17 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (player == null)
 			return;
 		
-		if (event.getType() == PrisonPearlEvent.Type.NEW) { 
+		if (event.getType() == PrisonPearlEvent.Type.NEW) {
+			updateAttachment(player);
+			
 			Player imprisoner = event.getImprisoner();
 			imprisoner.sendMessage("You've bound " + player.getDisplayName() + " to a prison pearl!");
 			player.sendMessage("You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
 		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
 			player.sendMessage("Your prison pearl is " + pp.describeLocation());
 		} else if (event.getType() == PrisonPearlEvent.Type.FREED) {
+			updateAttachment(player);
+			
 			World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
 			World prisonworld = Bukkit.getWorld(getConfig().getString("prison_world"));
 			
@@ -245,6 +266,32 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			player.sendMessage("You've been struck down by your pearl!");
 			break;
 		}
+	}
+	
+	private void updateAttachment(Player player) {
+		PermissionAttachment attachment = attachments.get(player.getName());
+		if (attachment == null) {
+			attachment = player.addAttachment(this);
+			attachments.put(player.getName(), attachment);
+		}
+		
+		if (pearls.isImprisoned(player)) {
+			for (String grant : getConfig().getStringList("prison_grant_perms")) {
+				System.out.println("Granting " + grant + " to " + player.getName());
+				attachment.setPermission(grant, true);
+			}
+			for (String deny : getConfig().getStringList("prison_deny_perms"))
+				attachment.setPermission(deny, false);			
+		} else {
+			for (String grant : getConfig().getStringList("prison_grant_perms")) {
+				System.out.println("Removing " + grant + " from " + player.getName());
+				attachment.unsetPermission(grant);
+			}
+			for (String deny : getConfig().getStringList("prison_deny_perms"))
+				attachment.unsetPermission(deny);		
+		}
+		
+		player.recalculatePermissions();
 	}
 	
 	@Override

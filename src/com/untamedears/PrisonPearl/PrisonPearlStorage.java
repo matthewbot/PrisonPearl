@@ -47,7 +47,7 @@ public class PrisonPearlStorage implements SaveLoad {
 				continue;
 			
 			PrisonPearl pp = new PrisonPearl(id, imprisoned, (InventoryHolder)block);
-			put(pp);
+			addPearl(pp);
 		}
 		
 		fis.close();
@@ -73,7 +73,7 @@ public class PrisonPearlStorage implements SaveLoad {
 	
 	public PrisonPearl newPearl(Player imprisoned, Player imprisoner) {
 		PrisonPearl pp = new PrisonPearl(nextid++, imprisoned.getName(), imprisoner);
-		put(pp);
+		addPearl(pp);
 		return pp;
 	}
 	
@@ -82,7 +82,7 @@ public class PrisonPearlStorage implements SaveLoad {
 		pearls_byimprisoned.remove(pp.getImprisonedName());
 	}
 	
-	private void put(PrisonPearl pp) {
+	public void addPearl(PrisonPearl pp) {
 		PrisonPearl old = pearls_byimprisoned.get(pp.getImprisonedName());
 		if (old != null)
 			pearls_byid.remove(old.getID());

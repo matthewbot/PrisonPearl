@@ -12,3 +12,5 @@ prison_motd:
    - You are trapped in this bleak and endless world
    - by a prison pearl.
    - Type /pplocate to locate your pearl.
+prison_grant_perms:
+   - RandomSpawn.exclude

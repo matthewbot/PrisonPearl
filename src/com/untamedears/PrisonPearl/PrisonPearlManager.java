@@ -105,9 +105,12 @@ public class PrisonPearlManager implements Listener {
 	}
 	
 	public boolean freePearl(PrisonPearl pp) {
-		if (!prisonPearlEvent(pp, PrisonPearlEvent.Type.FREED)) // set off an event
-			return false;
 		pearls.deletePearl(pp);
+		if (!prisonPearlEvent(pp, PrisonPearlEvent.Type.FREED)) { // set off an event
+			pearls.addPearl(pp);
+			return false;
+		}
+			
 		return true;
 	}
 
