@@ -267,9 +267,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			updateAttachment(player);
 			
 			if (!player.isDead() && player.getLocation().getWorld() == getPrisonWorld()) { // if the player isn't dead and is in prison world
-				Location loc = pp.getLocation(); // get the location of the pearl
+				Location loc = null;
+				if (getConfig().getBoolean("free_tppearl")) // if we tp to pearl on players being freed
+					loc = pp.getLocation(); // get the location of the pearl
 				if (loc == null)
-					loc = getRespawnLocation(player, player.getLocation()); // pearl has no location for some reason, get a spawn location for the player
+					loc = getRespawnLocation(player, player.getLocation()); // pearl has no location for some reason, get the respawn location for the player
 				
 				if (loc == RESPAWN_PLAYER) { // if we're supposed to respawn the player
 					player.setHealth(0); // kill him

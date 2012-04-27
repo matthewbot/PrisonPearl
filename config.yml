@@ -1,5 +1,6 @@
 free_world: world
 free_respawn: true
+free_tppearl: true
 damagelog_min: 3
 damagelog_ticks: 600
 ppkill_enabled: true
