@@ -345,19 +345,19 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (label.equalsIgnoreCase("pplocate")) {
+		if (label.equalsIgnoreCase("pplocate") || label.equalsIgnoreCase("ppl")) {
 			return locateCmd(sender, args, false);
 		} else if (label.equalsIgnoreCase("pplocateany")) {
 			return locateCmd(sender, args, true);
-		} else if (label.equalsIgnoreCase("ppfree")) {
+		} else if (label.equalsIgnoreCase("ppfree") || label.equalsIgnoreCase("ppf")) {
 			return freeCmd(sender, args, false);
 		} else if (label.equalsIgnoreCase("ppfreeany")) {
 			return freeCmd(sender, args, true);
-		} else if (label.equalsIgnoreCase("ppsummon")) {
+		} else if (label.equalsIgnoreCase("ppsummon") || label.equalsIgnoreCase("pps")) {
 			return summonCmd(sender, args);
-		} else if (label.equalsIgnoreCase("ppreturn")) {
+		} else if (label.equalsIgnoreCase("ppreturn") || label.equalsIgnoreCase("ppr")) {
 			return returnCmd(sender, args);
-		} else if (label.equalsIgnoreCase("ppkill")) {
+		} else if (label.equalsIgnoreCase("ppkill") || label.equalsIgnoreCase("ppk")) {
 			return killCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppsave")) {
 			return saveCmd(sender, args);
