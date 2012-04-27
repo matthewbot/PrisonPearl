@@ -84,8 +84,6 @@ public class DamageLogManager implements Runnable, Listener {
 		
 		boolean badpotion=false;
 		for (PotionEffect effect : event.getPotion().getEffects()) {
-			System.out.println(effect.getType());
-			
 			// apparently these aren't really enums, because == doesn't work
 			if (effect.getType().equals(PotionEffectType.HARM) || effect.getType().equals(PotionEffectType.POISON) || effect.getType().equals(PotionEffectType.WEAKNESS)) {
 				badpotion = true;
@@ -131,7 +129,6 @@ public class DamageLogManager implements Runnable, Listener {
 		long nowtick = getNowTick();
 		
 		Iterator<DamageLog> i = logs.values().iterator();
-		int ctr = 0;
 		long minremaining = Long.MAX_VALUE;
 		while (i.hasNext()) {
 			DamageLog log = i.next();
@@ -139,7 +136,6 @@ public class DamageLogManager implements Runnable, Listener {
 			
 			if (remaining <= plugin.getConfig().getInt("damagelog_ticks")/20) {
 				i.remove();
-				ctr++;
 				continue;
 			}
 
@@ -148,8 +144,6 @@ public class DamageLogManager implements Runnable, Listener {
 		
 		if (minremaining < Long.MAX_VALUE)
 			scheduleExpireTask(minremaining);
-		
-		System.out.println("Expired " + ctr + " damage logs");
 	}
 	
 	private void scheduleExpireTask(long ticks) {
