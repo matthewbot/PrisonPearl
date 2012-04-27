@@ -4,6 +4,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
@@ -132,7 +133,7 @@ public class PrisonPearlManager implements Listener {
 			PrisonPearl pp = pearls.getByID(item.getDurability());
 
 			if (pp != null) {
-				player.sendMessage("Prison Pearl - " + pp.getImprisonedName());
+				player.sendMessage(ChatColor.GREEN+"Prison Pearl - " + pp.getImprisonedName());
 			} else {
 				item.setDurability((short)0);
 				return item;

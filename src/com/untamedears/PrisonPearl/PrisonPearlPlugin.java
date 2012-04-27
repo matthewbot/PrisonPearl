@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -259,8 +260,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			updateAttachment(player);
 			
 			Player imprisoner = event.getImprisoner();
-			imprisoner.sendMessage("You've bound " + player.getDisplayName() + " to a prison pearl!");
-			player.sendMessage("You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
+			imprisoner.sendMessage(ChatColor.GREEN+"You've bound " + player.getDisplayName() + ChatColor.GREEN+" to a prison pearl!");
+			player.sendMessage(ChatColor.RED+"You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
 		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
 			player.sendMessage("Your prison pearl is " + pp.describeLocation());
 		} else if (event.getType() == PrisonPearlEvent.Type.FREED) {
@@ -298,17 +299,17 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 
 		switch (event.getType()) {
 		case SUMMONED:
-			player.sendMessage("You've been summoned to your prison pearl!");
+			player.sendMessage(ChatColor.RED+"You've been summoned to your prison pearl!");
 			player.teleport(event.getLocation());
 			break;
 			
 		case RETURNED:
-			player.sendMessage("You've been returned to your prison");
+			player.sendMessage(ChatColor.RED+"You've been returned to your prison");
 			player.teleport(event.getLocation());
 			break;
 			
 		case KILLED:
-			player.sendMessage("You've been struck down by your pearl!");
+			player.sendMessage(ChatColor.RED+"You've been struck down by your pearl!");
 			break;
 		}
 	}
