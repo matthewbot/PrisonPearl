@@ -42,7 +42,7 @@ public class PrisonPearlManager implements Listener {
 	}
 	
 	public boolean imprisonPlayer(Player imprisoned, Player imprisoner) {
-		World respawnworld = Bukkit.getWorld(getConfig().getString("respawn_world"));
+		World respawnworld = Bukkit.getWorld(getConfig().getString("free_world"));
 		
 		// set up the imprisoner's inventory
 		Inventory inv = imprisoner.getInventory();

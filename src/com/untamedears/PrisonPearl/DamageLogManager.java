@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -55,6 +56,12 @@ public class DamageLogManager implements Runnable, Listener {
 			Wolf wolf = (Wolf)event.getDamager();
 			if (wolf.getOwner() instanceof Player)
 				damager = (Player)wolf.getOwner();
+		} else if (event.getDamager() instanceof Arrow) {
+			Arrow arrow = (Arrow)event.getDamager();
+			if (!(arrow.getShooter() instanceof Player))
+				return;
+			
+			damager = (Player)arrow.getShooter();
 		}
 		
 		if (damager == null)
