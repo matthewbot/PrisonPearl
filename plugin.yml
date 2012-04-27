@@ -6,6 +6,7 @@ commands:
    pplocate:
       description: Locates your prison pearl
       usage: /<command>
+      aliases: ppl
   
    pplocateany:
       description: Locates any prison pearl in the world
@@ -15,6 +16,7 @@ commands:
    ppfree:
       description: Frees a prison pearl
       usage: /<command> [player]
+      aliases: ppf
       
    ppfreeany:
       description: Frees any prison pearl in the world
@@ -24,14 +26,17 @@ commands:
    ppsummon:
       description: Summons a player from their prison pearl
       usage: /ppsummon [player]
+      aliases: pps
       
    ppreturn:
       description: Returns a summoned player back to their prison pearl
       usage: /ppbanish [player]
+      aliases: ppr
       
    ppkill:
       description: Instantly kills a summoned player, sending them back to their prison pearl
       usage: /ppkill [player]
+      aliases: ppk
       
    ppsave:
       description: Saves all prisonpearl related data to disk
