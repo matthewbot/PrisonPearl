@@ -270,7 +270,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			if (!player.isDead() && player.getLocation().getWorld() == getPrisonWorld()) { // if the player isn't dead and is in prison world
 				Location loc = null;
 				if (getConfig().getBoolean("free_tppearl")) // if we tp to pearl on players being freed
-					loc = pp.getLocation(); // get the location of the pearl
+					loc = fuzzLocation(pp.getLocation()); // get the location of the pearl
 				if (loc == null)
 					loc = getRespawnLocation(player, player.getLocation()); // pearl has no location for some reason, get the respawn location for the player
 				
@@ -300,7 +300,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		switch (event.getType()) {
 		case SUMMONED:
 			player.sendMessage(ChatColor.RED+"You've been summoned to your prison pearl!");
-			player.teleport(event.getLocation());
+			player.teleport(fuzzLocation(event.getLocation()));
 			break;
 			
 		case RETURNED:
@@ -580,5 +580,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	private World getPrisonWorld() {
 		return Bukkit.getWorld(getConfig().getString("prison_world"));
+	}
+	
+	private Location fuzzLocation(Location loc) {
+		double rad = Math.random()*Math.PI*2;
+		Location newloc = loc.clone();
+		newloc.add(1.2*Math.cos(rad), 1.2*Math.sin(rad), 0);
+		
+		System.out.println("Fuzz " + loc + " -> " + newloc);
+		return newloc;
 	}
 }
