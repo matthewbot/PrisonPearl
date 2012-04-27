@@ -112,6 +112,9 @@ public class SummonManager implements Listener, SaveLoad {
 		if (!summonEvent(pp, SummonEvent.Type.SUMMONED, loc))
 			return false;
 		
+		if (summoned_pearls.containsKey(player.getName()))
+			return false;
+		
 		summoned_pearls.put(player.getName(), player.getLocation());
 		dirty = true;
 		return true;

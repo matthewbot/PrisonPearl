@@ -425,10 +425,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			}
 		}
 		
-		if (pp.getImprisonedPlayer() != sender)
-			sender.sendMessage("You've freed " + pp.getImprisonedName());
-		
-		pearlman.freePearl(pp);	
+		if (pearlman.freePearl(pp)) {
+			if (pp.getImprisonedPlayer() != sender) // when freeing yourself, you're already going to get a message
+				sender.sendMessage("You've freed " + pp.getImprisonedName());
+		} else {
+			sender.sendMessage("You failed to free " + pp.getImprisonedName());
+		}
 		return true;
 	}
 	
@@ -457,8 +459,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return true;
 		}
 			
-		sender.sendMessage("You've summoned " + pp.getImprisonedName());
-		summonman.summonPearl(pp, player.getLocation());
+		if (summonman.summonPearl(pp, player.getLocation()))
+			sender.sendMessage("You've summoned " + pp.getImprisonedName());
+		else
+			sender.sendMessage("You failed to summon " + pp.getImprisonedName());
 		return true;		
 	}
 	
