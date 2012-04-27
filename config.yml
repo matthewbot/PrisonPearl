@@ -5,11 +5,11 @@ damagelog_min: 3
 damagelog_ticks: 600
 ppkill_enabled: true
 prisonerstealing_enabled: true
-resetbed_enable: false
 summon_damage_radius: 20
 summon_damage_ticks: 20
 summon_damage_amt: 2
 prison_world: world_the_end
+prison_resetbed: false
 prison_motd:
    - You are trapped in this bleak and endless world
    - by a prison pearl.
