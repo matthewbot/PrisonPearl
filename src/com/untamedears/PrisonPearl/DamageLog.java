@@ -63,7 +63,7 @@ public class DamageLog {
 		
 		Collections.sort(players, new Comparator<Player>() {
 			public int compare(Player p0, Player p1) {
-				return Integer.compare(damagers.get(p0.getName()), damagers.get(p1.getName()));
+				return -Integer.compare(damagers.get(p0.getName()), damagers.get(p1.getName()));
 			}
 		});
 		
