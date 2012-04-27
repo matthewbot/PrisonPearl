@@ -240,9 +240,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			if (pp != null && pp.getHolder() == damager) // if this damager has already imprisoned this person
 				break; // don't be confusing and re-imprison him, just let him die
 			
+			int firstpearl = player.getInventory().first(Material.ENDER_PEARL);
 			if (getConfig().getBoolean("prison_musthotbar")) {
-				Inventory inv = player.getInventory();
-				if (inv.first(Material.ENDER_PEARL) > 9)
+				if (firstpearl > 9)
+					break;
+			} else {
+				if (firstpearl == -1)
 					break;
 			}
 			

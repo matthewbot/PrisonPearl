@@ -72,11 +72,10 @@ public class PrisonPearlManager implements Listener {
 			}
 		}
 		
-		if (stacknum == -1)
-			return false; // imprisoner doesn't have normal pearl any more, so no go
-		
 		int pearlnum;
-		if (stack.getAmount() == 1) { // if he's just got one pearl
+		if (stacknum == -1) { // no pearl (admin command)
+			pearlnum = inv.firstEmpty(); // give him a new one at the first empty slot
+		} else if (stack.getAmount() == 1) { // if he's just got one pearl
 			pearlnum = stacknum; // put the prison pearl there
 		} else {
 			pearlnum = inv.firstEmpty(); // otherwise, put the prison pearl in the first empty slot
