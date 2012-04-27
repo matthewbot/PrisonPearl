@@ -82,7 +82,11 @@ public class PrisonPearlStorage implements SaveLoad {
 	}
 	
 	public PrisonPearl newPearl(Player imprisoned, Player imprisoner) {
-		PrisonPearl pp = new PrisonPearl(nextid++, imprisoned.getName(), imprisoner);
+		return newPearl(imprisoned.getName(), imprisoner);
+	}
+	
+	public PrisonPearl newPearl(String imprisonedname, Player imprisoner) {
+		PrisonPearl pp = new PrisonPearl(nextid++, imprisonedname, imprisoner);
 		addPearl(pp);
 		return pp;
 	}

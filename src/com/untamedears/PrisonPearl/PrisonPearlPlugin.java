@@ -354,6 +354,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return killCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppsave")) {
 			return saveCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppimprisonany")) {
+			return imprisonCmd(sender, args);
 		}
 
 		return false;
@@ -432,6 +434,19 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		} else {
 			sender.sendMessage("You failed to free " + pp.getImprisonedName());
 		}
+		return true;
+	}
+	
+	private boolean imprisonCmd(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player))
+			sender.sendMessage("imprison cannot be used at the console");
+		
+		if (pearlman.imprisonPlayer(args[0], (Player)sender))
+			sender.sendMessage("You imprisoned " + args[0]);
+		else
+			sender.sendMessage("You failed to imprison " + args[0]);
 		return true;
 	}
 	
@@ -586,8 +601,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		double rad = Math.random()*Math.PI*2;
 		Location newloc = loc.clone();
 		newloc.add(1.2*Math.cos(rad), 1.2*Math.sin(rad), 0);
-		
-		System.out.println("Fuzz " + loc + " -> " + newloc);
 		return newloc;
 	}
 }

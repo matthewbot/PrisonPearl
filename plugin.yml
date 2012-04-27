@@ -43,6 +43,11 @@ commands:
       usage: /ppsave
       permission: prisonpearl.save
       
+   ppimprisonany:
+      description: Imprisons any player in the world
+      usage: /ppimprisonany player
+      permission: prisonpearl.imprisonany
+      
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands
@@ -50,6 +55,7 @@ permissions:
       children:
          prisonpearl.locateany: true
          prisonpearl.freeany: true
+         prisonpearl.imprisonany: true
          prisonpearl.save: true
 
    prisonpearl.locateany:

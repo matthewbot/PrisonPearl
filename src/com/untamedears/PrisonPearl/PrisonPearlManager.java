@@ -42,6 +42,10 @@ public class PrisonPearlManager implements Listener {
 	}
 	
 	public boolean imprisonPlayer(Player imprisoned, Player imprisoner) {
+		return imprisonPlayer(imprisoned.getName(), imprisoner);
+	}
+	
+	public boolean imprisonPlayer(String imprisonedname, Player imprisoner) {
 		World respawnworld = Bukkit.getWorld(getConfig().getString("free_world"));
 		
 		// set up the imprisoner's inventory
@@ -84,7 +88,7 @@ public class PrisonPearlManager implements Listener {
 			}
 		}
 	
-		PrisonPearl pp = pearls.newPearl(imprisoned, imprisoner); // create the prison pearl		
+		PrisonPearl pp = pearls.newPearl(imprisonedname, imprisoner); // create the prison pearl		
 		if (!prisonPearlEvent(pp, PrisonPearlEvent.Type.NEW, imprisoner)) { // set off an event
 			pearls.deletePearl(pp);
 			return false;
@@ -92,8 +96,11 @@ public class PrisonPearlManager implements Listener {
 
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
 		
-		if (getConfig().getBoolean("prison_resetbed"))
-			imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed
+		if (getConfig().getBoolean("prison_resetbed")) {
+			Player imprisoned = Bukkit.getPlayer(imprisonedname);
+			if (imprisoned != null)
+				imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed
+		}
 		return true;
 	}
 	
