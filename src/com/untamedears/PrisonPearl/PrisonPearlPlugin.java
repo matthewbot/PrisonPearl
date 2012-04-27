@@ -229,7 +229,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return;
 		
 		PrisonPearl pp = pearls.getByImprisoned(player);
-		if (getConfig().getBoolean("prisonerstealing_enabled") == false && pp != null) // bail if we can't steal prisoners and the guy is already imprisoned
+		if (getConfig().getBoolean("prison_stealing") == false && pp != null) // bail if we can't steal prisoners and the guy is already imprisoned
 			return;
 		
 		List<Player> damagers = damageman.getDamagers(player); // get all the players who helped kill this guy
@@ -239,6 +239,13 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		for (Player damager : damagers) { // check to see if anyone can imprison him
 			if (pp != null && pp.getHolder() == damager) // if this damager has already imprisoned this person
 				break; // don't be confusing and re-imprison him, just let him die
+			
+			if (getConfig().getBoolean("prison_musthotbar")) {
+				Inventory inv = player.getInventory();
+				if (inv.first(Material.ENDER_PEARL) > 9)
+					break;
+			}
+			
 			if (pearlman.imprisonPlayer(player, damager)) // otherwise, try to imprison
 				break;
 		}
