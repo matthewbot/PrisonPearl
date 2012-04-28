@@ -260,7 +260,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			
 			int firstpearl = player.getInventory().first(Material.ENDER_PEARL);
 			if (getConfig().getBoolean("prison_musthotbar")) {
-				if (firstpearl > 9)
+				if (firstpearl == -1 || firstpearl > 9)
 					break;
 			} else {
 				if (firstpearl == -1)
