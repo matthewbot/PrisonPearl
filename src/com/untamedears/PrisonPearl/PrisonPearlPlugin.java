@@ -260,12 +260,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			
 			int firstpearl = Integer.MAX_VALUE;
 			for (Entry<Integer, ? extends ItemStack> entry : damager.getInventory().all(Material.ENDER_PEARL).entrySet()) {
-				System.out.println(entry.getKey() + " " + entry.getValue());
 				if (entry.getValue().getDurability() == 0)
 					firstpearl = Math.min(entry.getKey(), firstpearl);
 			}
-			
-			System.out.println("Firstpearl " + firstpearl + " " + damager.getName());
 			
 			if (firstpearl == Integer.MAX_VALUE)
 				continue;
