@@ -25,8 +25,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
@@ -169,6 +171,38 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			} else {
 				System.err.println("Player " + player.getName() + " freed while offline, but getPlayerSpawnLocation didn't modify his position");
 			}
+		}
+	}
+	
+	@EventHandler(priority=EventPriority.HIGHEST)
+	public void onPlayerTeleport(PlayerTeleportEvent event) {
+		Player player = event.getPlayer();
+		updateAttachment(player);
+		
+		System.out.println(event.getPlayer().getName() + " triggered a PlayerTeleportEvent");
+		
+		if (player.isDead())
+			return;
+		
+		if (pearls.isImprisoned(player)) { // if in prison but not imprisoned
+			if (event.getTo().getWorld() != getPrisonWorld())
+				player.teleport(getPrisonWorld().getSpawnLocation());
+		}
+	}
+	
+	@EventHandler(priority=EventPriority.HIGHEST)
+	public void onPlayerPortal(PlayerPortalEvent event) {
+		Player player = event.getPlayer();
+		updateAttachment(player);
+		
+		System.out.println(event.getPlayer().getName() + " triggered a PlayerPortalEvent");
+		
+		if (player.isDead())
+			return;
+		
+		if (pearls.isImprisoned(player)) { // if in prison but not imprisoned
+			if (event.getTo().getWorld() != getPrisonWorld())
+				player.teleport(getPrisonWorld().getSpawnLocation());
 		}
 	}
 	
@@ -453,10 +487,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (!(sender instanceof Player))
 			sender.sendMessage("imprison cannot be used at the console");
 		
-		if (pearlman.imprisonPlayer(args[0], (Player)sender))
+		if (pearlman.imprisonPlayer(args[0], (Player)sender)) {
 			sender.sendMessage("You imprisoned " + args[0]);
-		else
+			Player player = Bukkit.getPlayer(args[0]);
+			if (player != null)
+				player.setHealth(0);
+		} else {
 			sender.sendMessage("You failed to imprison " + args[0]);
+		}
 		return true;
 	}
 	
