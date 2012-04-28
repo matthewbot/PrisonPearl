@@ -34,10 +34,11 @@ import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandExecutor {
+	private PrisonPearlStorage pearls;
 	private DamageLogManager damageman;
 	private PrisonPearlManager pearlman;
-	private PrisonPearlStorage pearls;
 	private SummonManager summonman;
+	private PrisonPortaledPlayerManager portalman;
 	
 	private Map<String, PermissionAttachment> attachments;
 
@@ -52,6 +53,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		pearlman = new PrisonPearlManager(this, pearls);
 		summonman = new SummonManager(this, pearls);
 		load(summonman, getSummonFile());
+		portalman = new PrisonPortaledPlayerManager(this, pearls);
+		load(portalman, getPortaledPlayersFile());
 		
 		Bukkit.getPluginManager().registerEvents(this, this);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
@@ -99,6 +102,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			save(pearls, getPrisonPearlsFile());
 		if (force || summonman.isDirty())
 			save(summonman, getSummonFile());
+		if (force || portalman.isDirty())
+			save(portalman, getPortaledPlayersFile());
 	}
 	
 	private static void load(SaveLoad obj, File file) {
@@ -140,6 +145,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		return new File(getDataFolder(), "summons.txt");
 	}
 	
+	private File getPortaledPlayersFile() {
+		return new File(getDataFolder(), "portaledplayers.txt");
+	}
+	
 	// Free player if he was free'd while offline
 	// otherwise, correct his spawn location if necessary
 	@EventHandler(priority=EventPriority.HIGHEST)
@@ -153,7 +162,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		prisonMotd(player); 
 		
 		if (player.getLocation().getWorld() == getPrisonWorld()) { // if in prison world
-			if (!pearls.isImprisoned(player)) { // but not imprisoned, and didn't go there through a portal
+			if (!pearls.isImprisoned(player) && !portalman.isPlayerPortaledToPrison(player)) { // but not imprisoned, and didn't go there through a portal
 				player.sendMessage("While away, you were freed!"); // he was freed offline
 		
 				final Location newloc = getRespawnLocation(player, player.getLocation()); // get his correct spawn location
@@ -171,18 +180,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	@EventHandler(priority=EventPriority.HIGHEST)
-	public void onPlayerPortal(PlayerPortalEvent event) {
+	public void onPlayerPortalEvent(PlayerPortalEvent event) {
 		Player player = event.getPlayer();
-		updateAttachment(player);
-		
-		System.out.println(event.getPlayer().getName() + " triggered a PlayerPortalEvent");
-		
-		if (player.isDead())
-			return;
 		
 		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if in prison but not imprisoned
-			if (event.getTo().getWorld() != getPrisonWorld())
-				player.teleport(getPrisonWorld().getSpawnLocation());
+			if (event.getTo().getWorld() != getPrisonWorld()) {
+				prisonMotd(player);
+				delayedTp(player, getPrisonWorld().getSpawnLocation());
+			}
 		}
 	}
 	
@@ -239,12 +244,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		
 		Player player = (Player)event.getEntity();
 		
-		if (player.getLocation().getWorld() == getPrisonWorld()) // don't allow people to imprison other people while in the prison world
-			return;
-		
-		PrisonPearl pp = pearls.getByImprisoned(player);
-		if (getConfig().getBoolean("prison_stealing") == false && pp != null) // bail if we can't steal prisoners and the guy is already imprisoned
-			return;
+		PrisonPearl pp = pearls.getByImprisoned(player); // find out if the player is imprisoned
+		if (pp != null) { // if imprisoned
+			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) // bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
+				return;
+		}
 		
 		List<Player> damagers = damageman.getDamagers(player); // get all the players who helped kill this guy
 		if (damagers == null)
