@@ -53,6 +53,11 @@ public class PrisonPearlStorage implements SaveLoad {
 				continue;
 			
 			PrisonPearl pp = new PrisonPearl(id, imprisoned, (InventoryHolder)block);
+			if (!pp.verifyLocation()) {
+				System.err.println("PrisonPearl for " + pp.getImprisonedName() + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
+				continue;
+			}
+			
 			addPearl(pp);
 		}
 		

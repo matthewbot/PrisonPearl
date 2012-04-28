@@ -416,7 +416,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 		
 		if (pp != null) {
-			sender.sendMessage(name_possesive + " prison pearl is " + pp.describeLocation());
+			if (!pp.verifyLocation()) {
+				System.err.println("PrisonPearl for " + pp.getImprisonedName() + " didn't validate, so is now set free");
+				pearlman.freePearl(pp);
+			} else {
+				sender.sendMessage(name_possesive + " prison pearl is " + pp.describeLocation());
+			}
 		} else {
 			sender.sendMessage(name_is + " not imprisoned");
 		}

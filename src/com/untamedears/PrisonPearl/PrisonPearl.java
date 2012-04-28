@@ -1,13 +1,17 @@
 package com.untamedears.PrisonPearl;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 public class PrisonPearl {
@@ -114,6 +118,38 @@ public class PrisonPearl {
 			return "held by " + getHolderName() + " at " + str;
 		else
 			return "located at " + str;
+	}
+	
+	public boolean verifyLocation() {
+		Location loc = getLocation();
+		
+		if (item != null) {
+			Chunk chunk = loc.getChunk();
+			for (Entity entity : chunk.getEntities()) {
+				if (entity == item)
+					return true;
+			}
+			
+			return false;
+		} else {
+			Inventory inv;
+			if (holder instanceof Player) {
+				inv = holder.getInventory();
+			} else if (holder instanceof BlockState || holder instanceof DoubleChest) {
+				BlockState newstate = loc.getBlock().getState();
+				if (newstate.getClass() != holder.getClass())
+					return false;
+				inv = holder.getInventory();
+			} else {
+				return false;
+			}
+
+			for (ItemStack item : inv.all(Material.ENDER_PEARL).values()) {
+				if (item.getDurability() == id)
+					return true;
+			}
+			return false;
+		}
 	}
 	
 	public void setHolder(InventoryHolder holder) {
