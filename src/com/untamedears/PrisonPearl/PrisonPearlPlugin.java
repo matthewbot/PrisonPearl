@@ -240,10 +240,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			if (curloc.getWorld() != getPrisonWorld()) // but not in prison world
 				return getPrisonWorld().getSpawnLocation();	// he should respawn in prison
 		} else if (curloc.getWorld() == getPrisonWorld()) { // not imprisoned, but spawning in prison?
-			if (getConfig().getBoolean("free_respawn")) // if we free players by respawning them
-				return RESPAWN_PLAYER; // kill the player
-			else if (player.getBedSpawnLocation() != null) // otherwise, if he's got a bed
+			if (player.getBedSpawnLocation() != null) // if he's got a bed
 				return player.getBedSpawnLocation(); // spawn him there
+			else if (getConfig().getBoolean("free_respawn")) // if we should respawn instead of tp to spawn
+				return RESPAWN_PLAYER; // kill the player
 			else
 				return getFreeWorld().getSpawnLocation(); // otherwise, respawn him at the spawn of the free world
 		}
