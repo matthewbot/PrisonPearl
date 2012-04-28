@@ -28,7 +28,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
@@ -153,40 +152,21 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		
 		prisonMotd(player); 
 		
-		// determine if this player has been freed
-		if (player.getLocation().getWorld() == getPrisonWorld() && !pearls.isImprisoned(player)) { // if in prison but not imprisoned
-			player.sendMessage("While away, you were freed!"); // he was freed offline
-	
-			final Location newloc = getRespawnLocation(player, player.getLocation()); // get his correct spawn location
-			if (newloc == RESPAWN_PLAYER) { // if we're supposed to respawn him
-				player.setHealth(0); // set his health to zero
-			} else if (newloc != null) {
-				// under very specific situations it seems like teleport directly in onPlayerJoin causes duplicate entities
-				Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
-					public Void call() {
-						player.teleport(newloc); // teleport him there
-						return null;
-					}
-				});
-			} else {
-				System.err.println("Player " + player.getName() + " freed while offline, but getPlayerSpawnLocation didn't modify his position");
+		if (player.getLocation().getWorld() == getPrisonWorld()) { // if in prison world
+			if (!pearls.isImprisoned(player)) { // but not imprisoned, and didn't go there through a portal
+				player.sendMessage("While away, you were freed!"); // he was freed offline
+		
+				final Location newloc = getRespawnLocation(player, player.getLocation()); // get his correct spawn location
+				if (newloc == RESPAWN_PLAYER) { // if we're supposed to respawn him
+					player.setHealth(0); // set his health to zero
+				} else if (newloc != null) {
+					delayedTp(player, newloc);
+				} else {
+					System.err.println("Player " + player.getName() + " freed while offline, but getPlayerSpawnLocation didn't modify his position");
+				}
 			}
-		}
-	}
-	
-	@EventHandler(priority=EventPriority.HIGHEST)
-	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		Player player = event.getPlayer();
-		updateAttachment(player);
-		
-		System.out.println(event.getPlayer().getName() + " triggered a PlayerTeleportEvent");
-		
-		if (player.isDead())
-			return;
-		
-		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if in prison but not imprisoned
-			if (event.getTo().getWorld() != getPrisonWorld())
-				player.teleport(getPrisonWorld().getSpawnLocation());
+		} else if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // not in prison world, but should be
+			delayedTp(player, getPrisonWorld().getSpawnLocation()); // tp him to prison
 		}
 	}
 	
@@ -650,5 +630,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		Location newloc = loc.clone();
 		newloc.add(1.2*Math.cos(rad), 1.2*Math.sin(rad), 0);
 		return newloc;
+	}
+	
+	private void delayedTp(final Player player, final Location loc) {
+		Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
+			public Void call() {
+				player.teleport(loc); // teleport him there
+				return null;
+			}
+		});
 	}
 }
