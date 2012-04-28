@@ -184,7 +184,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (player.isDead())
 			return;
 		
-		if (pearls.isImprisoned(player)) { // if in prison but not imprisoned
+		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if in prison but not imprisoned
 			if (event.getTo().getWorld() != getPrisonWorld())
 				player.teleport(getPrisonWorld().getSpawnLocation());
 		}
@@ -200,7 +200,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (player.isDead())
 			return;
 		
-		if (pearls.isImprisoned(player)) { // if in prison but not imprisoned
+		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if in prison but not imprisoned
 			if (event.getTo().getWorld() != getPrisonWorld())
 				player.teleport(getPrisonWorld().getSpawnLocation());
 		}
