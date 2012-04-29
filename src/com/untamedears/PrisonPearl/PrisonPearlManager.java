@@ -96,7 +96,7 @@ public class PrisonPearlManager implements Listener {
 		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
 		
 		if (getConfig().getBoolean("prison_resetbed")) {
-			Player imprisoned = Bukkit.getPlayer(imprisonedname);
+			Player imprisoned = Bukkit.getPlayerExact(imprisonedname);
 			if (imprisoned != null)
 				imprisoned.setBedSpawnLocation(respawnworld.getSpawnLocation()); // clear out the players bed
 		}

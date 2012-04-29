@@ -27,7 +27,7 @@ public class DamageLog {
 	}
 	
 	public Player getPlayer() {
-		return Bukkit.getPlayer(player);
+		return Bukkit.getPlayerExact(player);
 	}
 	
 	public int getDamage(Player player) {
@@ -56,7 +56,7 @@ public class DamageLog {
 		List<Player> players = new ArrayList<Player>();
 		
 		for (Entry<String, Integer> entry : damagers.entrySet()) {
-			Player player = Bukkit.getPlayer(entry.getKey());
+			Player player = Bukkit.getPlayerExact(entry.getKey());
 			if (player != null && entry.getValue() > min)
 				players.add(player);
 		}

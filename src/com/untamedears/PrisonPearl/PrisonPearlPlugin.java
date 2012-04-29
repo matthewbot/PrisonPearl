@@ -162,23 +162,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (player.isDead())
 			return;
 		
-		prisonMotd(player); 
-		
-		if (player.getLocation().getWorld() == getPrisonWorld()) { // if in prison world
-			if (!pearls.isImprisoned(player) && !portalman.isPlayerPortaledToPrison(player)) { // but not imprisoned, and didn't go there through a portal
+		Location loc = player.getLocation();
+		Location newloc = getRespawnLocation(player, loc);
+		if (newloc != null) {
+			if (loc.getWorld() == getPrisonWorld() && newloc.getWorld() != loc.getWorld())
 				player.sendMessage("While away, you were freed!"); // he was freed offline
-		
-				final Location newloc = getRespawnLocation(player, player.getLocation()); // get his correct spawn location
-				if (newloc == RESPAWN_PLAYER) { // if we're supposed to respawn him
-					player.setHealth(0); // set his health to zero
-				} else if (newloc != null) {
-					delayedTp(player, newloc);
-				} else {
-					System.err.println("Player " + player.getName() + " freed while offline, but getPlayerSpawnLocation didn't modify his position");
-				}
-			}
-		} else if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // not in prison world, but should be
-			delayedTp(player, getPrisonSpawnLocation()); // tp him to prison
+			delayedTp(player, newloc);
+		} else {
+			prisonMotd(player); 
 		}
 	}
 	
@@ -226,8 +217,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	private Location getRespawnLocation(Player player, Location curloc) {	
 		if (pearls.isImprisoned(player)) { // if player is imprisoned
 			if (curloc.getWorld() != getPrisonWorld()) // but not in prison world
-				return getPrisonSpawnLocation();
-		} else if (curloc.getWorld() == getPrisonWorld()) { // not imprisoned, but spawning in prison?
+				return getPrisonSpawnLocation(); // should bre respawned in prison
+		} else if (curloc.getWorld() == getPrisonWorld() && !portalman.isPlayerPortaledToPrison(player)) { // not imprisoned, but spawning in prison?
 			if (player.getBedSpawnLocation() != null) // if he's got a bed
 				return player.getBedSpawnLocation(); // spawn him there
 			else if (getConfig().getBoolean("free_respawn")) // if we should respawn instead of tp to spawn
@@ -307,8 +298,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 				Location loc = null;
 				if (getConfig().getBoolean("free_tppearl")) // if we tp to pearl on players being freed
 					loc = fuzzLocation(pp.getLocation()); // get the location of the pearl
-				if (loc == null)
-					loc = getRespawnLocation(player, player.getLocation()); // pearl has no location for some reason, get the respawn location for the player
+				if (loc == null) // if we don't have a location yet
+					loc = getRespawnLocation(player, player.getLocation()); // get the respawn location for the player
 				
 				if (loc == RESPAWN_PLAYER) { // if we're supposed to respawn the player
 					player.setHealth(0); // kill him
@@ -495,7 +486,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		
 		if (pearlman.imprisonPlayer(args[0], (Player)sender)) {
 			sender.sendMessage("You imprisoned " + args[0]);
-			Player player = Bukkit.getPlayer(args[0]);
+			Player player = Bukkit.getPlayerExact(args[0]);
 			if (player != null)
 				player.setHealth(0);
 		} else {
@@ -738,19 +729,21 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		return Bukkit.getWorld(getConfig().getString("prison_world"));
 	}
 	
+	// hill climbing algorithm which attempts to randomly spawn prisoners while actively avoiding pits
+	// or the obsidian pillars.
 	private Location getPrisonSpawnLocation() {
 		Random rand = new Random();
-		Location loc = getPrisonWorld().getSpawnLocation();
+		Location loc = getPrisonWorld().getSpawnLocation(); // start at spawn
 		int locground = groundHeightAt(loc);
-		for (int i=0; i<20; i++) {
-			if (locground > 40 && locground < 70 && i > 5)
-				return loc;
+		for (int i=0; i<20; i++) { // for up to 20 iterations
+			if (locground > 40 && locground < 70 && i > 5) // if the current candidate looks reasonable and we've iterated at least 5 times
+				return loc; // we're done
 			
-			Location newloc = loc.clone().add(rand.nextGaussian()*5, 0, rand.nextGaussian()*5);
-			int newlocground = groundHeightAt(newloc);
+			Location newloc = loc.clone().add(rand.nextGaussian()*5, 0, rand.nextGaussian()*5); // pick a new location near the current one
+			int newlocground = groundHeightAt(newloc); // get its ground height
 			
-			if (newlocground > locground+(int)(rand.nextGaussian()*3) || locground > 70) {
-				loc = newloc;
+			if (newlocground > locground+(int)(rand.nextGaussian()*3) || locground > 70) { // if its better in a fuzzy sense, or if the current location is too high
+				loc = newloc; // it becomes the new current location
 				locground = newlocground;
 			}
 		}
@@ -779,11 +772,15 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	private void delayedTp(final Player player, final Location loc) {
-		Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
-			public Void call() {
-				player.teleport(loc); // teleport him there
-				return null;
-			}
-		});
+		if (loc == RESPAWN_PLAYER) {
+			player.setHealth(0);
+		} else {
+			Bukkit.getScheduler().callSyncMethod(this, new Callable<Void>() {
+				public Void call() {
+					player.teleport(loc);
+					return null;
+				}
+			});
+		}
 	}
 }
