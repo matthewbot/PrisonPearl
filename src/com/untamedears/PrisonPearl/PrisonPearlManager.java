@@ -286,11 +286,13 @@ public class PrisonPearlManager implements Listener {
 	
 	private void updatePearl(PrisonPearl pp, Item item) {
 		pp.setItem(item);
+		pearls.markDirty();
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.DROPPED));
 	}
 	
 	private void updatePearl(PrisonPearl pp, InventoryHolder holder) {
 		pp.setHolder(holder);
+		pearls.markDirty();
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.HELD));
 	}
 	

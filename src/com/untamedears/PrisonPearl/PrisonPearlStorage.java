@@ -35,6 +35,10 @@ public class PrisonPearlStorage implements SaveLoad {
 	public boolean isDirty() {
 		return dirty;
 	}
+	
+	public void markDirty() {
+		dirty = true;
+	}
 
 	public void load(File file) throws IOException {
 		FileInputStream fis = new FileInputStream(file);

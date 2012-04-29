@@ -582,7 +582,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return false;
 		
 		try {
-			saveAll(false);
+			saveAll(true);
 			sender.sendMessage("PrisonPearl data saved!");
 			return true;
 		} catch (RuntimeException e) {
