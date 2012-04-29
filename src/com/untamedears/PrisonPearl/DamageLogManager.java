@@ -48,6 +48,7 @@ public class DamageLogManager implements Runnable, Listener {
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
 		if (!(event.getEntity() instanceof Player))
 			return;
+		Player player = (Player)event.getEntity();
 		
 		Player damager = null;
 		if (event.getDamager() instanceof Player) {
@@ -64,10 +65,10 @@ public class DamageLogManager implements Runnable, Listener {
 			damager = (Player)arrow.getShooter();
 		}
 		
-		if (damager == null)
+		if (damager == null || damager == player)
 			return;
 		
-		recordDamage((Player)event.getEntity(), damager, event.getDamage());
+		recordDamage(player, damager, event.getDamage());
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
