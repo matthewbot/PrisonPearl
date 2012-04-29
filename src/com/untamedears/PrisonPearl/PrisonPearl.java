@@ -132,18 +132,19 @@ public class PrisonPearl {
 			
 			return false;
 		} else {
-			Inventory inv;
 			if (holder instanceof Player) {
-				inv = holder.getInventory();
-			} else if (holder instanceof BlockState || holder instanceof DoubleChest) {
-				BlockState newstate = loc.getBlock().getState();
-				if (newstate.getClass() != holder.getClass())
+				if (!((Player)holder).isOnline())
 					return false;
-				inv = holder.getInventory();
-			} else {
-				return false;
+			} else if (holder instanceof BlockState) {
+				if (!((BlockState)holder).update(true))
+					return false;
+			} else if (holder instanceof DoubleChest) {
+				DoubleChest dc = (DoubleChest)holder;
+				if (!((BlockState)dc.getLeftSide()).update(true))
+					return false;
 			}
-
+				
+			Inventory inv = holder.getInventory();
 			for (ItemStack item : inv.all(Material.ENDER_PEARL).values()) {
 				if (item.getDurability() == id)
 					return true;
