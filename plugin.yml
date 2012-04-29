@@ -48,6 +48,18 @@ commands:
       usage: /ppimprisonany player
       permission: prisonpearl.imprisonany
       
+   ppbroadcast:
+      description: Broadcast your pplocate commands to another player
+      usage: /ppbroadcast player
+      
+   ppconfirm:
+      description: Confirm reception of pplocate commands from a player
+      usage: /ppconfirm [player]
+      
+   ppsilence:
+      description: Silence reception of pplocate commands from player
+      usage: /ppsilence player
+      
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands

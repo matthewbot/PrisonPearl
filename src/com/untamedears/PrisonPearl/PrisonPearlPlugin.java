@@ -39,6 +39,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	private PrisonPearlManager pearlman;
 	private SummonManager summonman;
 	private PrisonPortaledPlayerManager portalman;
+	private BroadcastManager broadcastman;
 	
 	private Map<String, PermissionAttachment> attachments;
 
@@ -55,6 +56,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		load(summonman, getSummonFile());
 		portalman = new PrisonPortaledPlayerManager(this, pearls);
 		load(portalman, getPortaledPlayersFile());
+		broadcastman = new BroadcastManager();
 		
 		Bukkit.getPluginManager().registerEvents(this, this);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
@@ -294,7 +296,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			imprisoner.sendMessage(ChatColor.GREEN+"You've bound " + player.getDisplayName() + ChatColor.GREEN+" to a prison pearl!");
 			player.sendMessage(ChatColor.RED+"You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
 		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
-			player.sendMessage("Your prison pearl is " + pp.describeLocation());
+			String loc = pp.describeLocation();
+			player.sendMessage(ChatColor.GREEN + "Your prison pearl is " + loc);
+			broadcastman.broadcast(player, ChatColor.GREEN + player.getName() + ": " + loc);
 		} else if (event.getType() == PrisonPearlEvent.Type.FREED) {
 			updateAttachment(player);
 			
@@ -313,6 +317,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			}
 			
 			player.sendMessage("You've been freed!");
+			broadcastman.broadcast(player, player.getDisplayName() + " was freed!");
 		}
 	}
 	
@@ -387,6 +392,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return saveCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppimprisonany")) {
 			return imprisonCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppbroadcast")) {
+			return broadcastCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppconfirm")) {
+			return confirmCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppsilence")) {
+			return silenceCmd(sender, args);
 		}
 
 		return false;
@@ -423,7 +434,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 				System.err.println("PrisonPearl for " + pp.getImprisonedName() + " didn't validate, so is now set free");
 				pearlman.freePearl(pp);
 			} else {
-				sender.sendMessage(name_possesive + " prison pearl is " + pp.describeLocation());
+				sender.sendMessage(ChatColor.GREEN + name_possesive + " prison pearl is " + pp.describeLocation());
+				if (sender instanceof Player && !any)
+					broadcastman.broadcast((Player)sender, ChatColor.GREEN + "From " + pp.getImprisonedName() + ": " + pp.describeLocation());
 			}
 		} else {
 			sender.sendMessage(name_is + " not imprisoned");
@@ -590,6 +603,93 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 				sender.sendMessage("PrisonPearl failed to save data! Check server logs!");
 			throw e;
 		}
+	}
+	
+	private boolean broadcastCmd(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		Player receiver = Bukkit.getPlayerExact(args[0]);
+		if (receiver == null) {
+			sender.sendMessage("No such player " + args[0]);
+			return true;
+		} else if (receiver == player) {
+			sender.sendMessage("You cannot broadcast to yourself!");
+			return true;
+		} else if (!pearls.isImprisoned(player)) {
+			sender.sendMessage("You are not imprisoned!");
+			return true;
+		}
+		
+		if (broadcastman.addBroadcast(player, receiver)) {
+			sender.sendMessage("You will broadcast pplocate information to " + receiver.getDisplayName());
+			receiver.sendMessage("Type /ppconfirm to receive pplocate broadcasts from " + player.getDisplayName());
+		} else {
+			sender.sendMessage("You are already broadcasting to " + receiver.getDisplayName());
+		}
+		
+		return true;
+	}
+	
+	private boolean confirmCmd(CommandSender sender, String args[]) {
+		if (args.length > 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		Player broadcaster;
+		
+		if (args.length == 1) {
+			broadcaster = Bukkit.getPlayerExact(args[0]);
+			if (broadcaster == null) {
+				sender.sendMessage("No such player " + args[0]);
+				return true;
+			}
+		} else {
+			broadcaster = broadcastman.getQuickConfirmPlayer(player);
+			if (broadcaster == null) {
+				sender.sendMessage("Nobody has requested to broadcast to you");
+				return true;
+			}
+		}
+		
+		if (broadcastman.confirmBroadcast(broadcaster, player)) {
+			player.sendMessage("You will now receive broadcasts from " + broadcaster.getDisplayName());
+		} else {
+			player.sendMessage(broadcaster.getDisplayName() + " does not wish to broadcast to you");
+		}
+		return true;
+	}
+	
+	private boolean silenceCmd(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		Player broadcaster = Bukkit.getPlayerExact(args[0]);
+		if (broadcaster == null) {
+			sender.sendMessage("No such player " + args[0]);
+			return true;
+		}
+		
+		if (broadcastman.silenceBroadcast(player, broadcaster)) {
+			player.sendMessage("You will no longer receive broadcasts from " + broadcaster.getDisplayName());
+		} else {
+			player.sendMessage(broadcaster.getDisplayName() + " is not broadcasting to you");
+		}
+		return true;
 	}
 	
 	private PrisonPearl getCommandPearl(Player player, String args[]) {

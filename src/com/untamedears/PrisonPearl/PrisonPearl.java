@@ -84,7 +84,7 @@ public class PrisonPearl {
 		BlockState state;
 		if ((entity = getHolderEntity()) != null) {
 			if (entity instanceof Player) {
-				return ((Player)entity).getDisplayName();
+				return ((Player)entity).getName();
 			} else {
 				System.err.println("PrisonPearl " + id + " is held by a non-player entity");
 				return "an unknown entity";
