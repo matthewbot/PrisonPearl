@@ -14,9 +14,7 @@ import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 public class PrisonPearlStorage implements SaveLoad {
@@ -52,13 +50,9 @@ public class PrisonPearlStorage implements SaveLoad {
 			short id = Short.parseShort(parts[0]);
 			String imprisoned = parts[1];
 			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
-			BlockState block = loc.getBlock().getState();
-			if (!(block instanceof InventoryHolder))
-				continue;
-			
-			PrisonPearl pp = new PrisonPearl(id, imprisoned, (InventoryHolder)block);
-			if (!pp.verifyLocation()) {
-				System.err.println("PrisonPearl for " + pp.getImprisonedName() + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
+			PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
+			if (pp == null) {
+				System.err.println("PrisonPearl for " + imprisoned + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
 				continue;
 			}
 			

@@ -7,11 +7,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.BrewingStand;
+import org.bukkit.block.Chest;
+import org.bukkit.block.Dispenser;
+import org.bukkit.block.DoubleChest;
+import org.bukkit.block.Furnace;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -256,10 +261,20 @@ public class PrisonPearlManager implements Listener {
 			holder = view.getBottomInventory().getHolder();
 		}
 		
-		if (holder instanceof StorageMinecart) {
-			event.setCancelled(true);
+		if (holder instanceof Chest) {
+			updatePearl(pp, (Chest)holder);
+		} else if (holder instanceof DoubleChest) {
+			updatePearl(pp, (Chest)((DoubleChest)holder).getLeftSide());
+		} else if (holder instanceof Furnace) {
+			updatePearl(pp, (Furnace)holder);
+		} else if (holder instanceof Dispenser) {
+			updatePearl(pp, (Dispenser)holder);
+		} else if (holder instanceof BrewingStand) {
+			updatePearl(pp, (BrewingStand)holder);
+		} else if (holder instanceof Player) {
+			updatePearl(pp, (Player)holder);
 		} else {
-			updatePearl(pp, holder);
+			event.setCancelled(true);
 		}
 	}
 	
@@ -285,13 +300,19 @@ public class PrisonPearlManager implements Listener {
 	}
 	
 	private void updatePearl(PrisonPearl pp, Item item) {
-		pp.setItem(item);
+		pp.setHolder(item);
 		pearls.markDirty();
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.DROPPED));
 	}
 	
-	private void updatePearl(PrisonPearl pp, InventoryHolder holder) {
-		pp.setHolder(holder);
+	private void updatePearl(PrisonPearl pp, Player player) {
+		pp.setHolder(player);
+		pearls.markDirty();
+		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.HELD));
+	}
+	
+	private <ItemBlock extends InventoryHolder & BlockState> void updatePearl(PrisonPearl pp, ItemBlock block) {
+		pp.setHolder(block);
 		pearls.markDirty();
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.HELD));
 	}

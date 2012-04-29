@@ -249,7 +249,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			return;
 		
 		for (Player damager : damagers) { // check to see if anyone can imprison him
-			if (pp != null && pp.getHolder() == damager) // if this damager has already imprisoned this person
+			if (pp != null && pp.getHolderPlayer() == damager) // if this damager has already imprisoned this person
 				break; // don't be confusing and re-imprison him, just let him die
 			
 			int firstpearl = Integer.MAX_VALUE;
