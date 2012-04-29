@@ -738,6 +738,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	private Location fuzzLocation(Location loc) {
+		if (loc == null)
+			return null;
+
 		double rad = Math.random()*Math.PI*2;
 		Location newloc = loc.clone();
 		newloc.add(1.2*Math.cos(rad), 1.2*Math.sin(rad), 0);
