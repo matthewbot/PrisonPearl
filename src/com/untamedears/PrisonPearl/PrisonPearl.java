@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -126,12 +127,20 @@ public class PrisonPearl {
 			if (player != null) {
 				if (!player.isOnline())
 					return false;
+				ItemStack cursoritem = player.getItemOnCursor();
+				if (cursoritem.getType() == Material.ENDER_PEARL && cursoritem.getDurability() == id)
+					return true;
 				inv = player.getInventory();
 			} else if (blocklocation != null) {
 				BlockState bs = getHolderBlockState();
 				if (!(bs instanceof InventoryHolder))
 					return false;
 				inv = ((InventoryHolder)bs).getInventory();
+				for (HumanEntity viewer : inv.getViewers()) {
+					ItemStack cursoritem = viewer.getItemOnCursor();
+					if (cursoritem.getType() == Material.ENDER_PEARL && cursoritem.getDurability() == id)
+						return true;
+				}
 			} else {
 				return false;
 			}
