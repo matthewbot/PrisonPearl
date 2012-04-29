@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
@@ -177,7 +178,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 				}
 			}
 		} else if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // not in prison world, but should be
-			delayedTp(player, getPrisonWorld().getSpawnLocation()); // tp him to prison
+			delayedTp(player, getPrisonSpawnLocation()); // tp him to prison
 		}
 	}
 	
@@ -188,7 +189,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if in prison but not imprisoned
 			if (event.getTo().getWorld() != getPrisonWorld()) {
 				prisonMotd(player);
-				delayedTp(player, getPrisonWorld().getSpawnLocation());
+				delayedTp(player, getPrisonSpawnLocation());
 			}
 		}
 	}
@@ -225,7 +226,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	private Location getRespawnLocation(Player player, Location curloc) {	
 		if (pearls.isImprisoned(player)) { // if player is imprisoned
 			if (curloc.getWorld() != getPrisonWorld()) // but not in prison world
-				return getPrisonWorld().getSpawnLocation();	// he should respawn in prison
+				return getPrisonSpawnLocation();
 		} else if (curloc.getWorld() == getPrisonWorld()) { // not imprisoned, but spawning in prison?
 			if (player.getBedSpawnLocation() != null) // if he's got a bed
 				return player.getBedSpawnLocation(); // spawn him there
@@ -735,6 +736,36 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	
 	private World getPrisonWorld() {
 		return Bukkit.getWorld(getConfig().getString("prison_world"));
+	}
+	
+	private Location getPrisonSpawnLocation() {
+		Random rand = new Random();
+		Location loc = getPrisonWorld().getSpawnLocation();
+		int locground = groundHeightAt(loc);
+		for (int i=0; i<20; i++) {
+			if (locground > 40 && locground < 70 && i > 5)
+				return loc;
+			
+			Location newloc = loc.clone().add(rand.nextGaussian()*5, 0, rand.nextGaussian()*5);
+			int newlocground = groundHeightAt(newloc);
+			
+			if (newlocground > locground+(int)(rand.nextGaussian()*3) || locground > 70) {
+				loc = newloc;
+				locground = newlocground;
+			}
+		}
+
+		return loc;
+	}
+	
+	private int groundHeightAt(Location loc) {
+		Location ground = new Location(loc.getWorld(), loc.getX(), 100, loc.getZ());
+		while (ground.getBlockY() >= 1) {
+			if (!ground.getBlock().isEmpty())
+				return ground.getBlockY();
+			ground.add(0, -1, 0);
+		}
+		return 0;
 	}
 	
 	private Location fuzzLocation(Location loc) {
