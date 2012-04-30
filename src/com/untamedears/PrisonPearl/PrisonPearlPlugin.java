@@ -75,6 +75,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		if (getConfig().getBoolean("ppkill_enabled"))
 			getCommand("ppkill").setExecutor(this);
 		getCommand("ppsave").setExecutor(this);
+		getCommand("ppbroadcast").setExecutor(this);
+		getCommand("ppconfirm").setExecutor(this);
+		getCommand("ppsilence").setExecutor(this);
 
 		// shamelessly swiped from bookworm, not sure why there isn't a Bukkit API for this
 		// this causes items to be stacked by their durability value
@@ -165,7 +168,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		Location loc = player.getLocation();
 		Location newloc = getRespawnLocation(player, loc);
 		if (newloc != null) {
-			if (loc.getWorld() == getPrisonWorld() && newloc.getWorld() != loc.getWorld())
+			if (loc.getWorld() == getPrisonWorld() && (newloc.getWorld() != loc.getWorld() || newloc == RESPAWN_PLAYER))
 				player.sendMessage("While away, you were freed!"); // he was freed offline
 			delayedTp(player, newloc);
 		} else {
@@ -173,6 +176,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 	}
 	
+	// don't let people escape through the end portal
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerPortalEvent(PlayerPortalEvent event) {
 		Player player = event.getPlayer();
@@ -185,6 +189,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 		}
 	}
 	
+	// remove permission attachments
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		PermissionAttachment attachment = attachments.remove(event.getPlayer().getName());
@@ -192,7 +197,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			attachment.remove();
 	}
 
-	// run player spawn logic in playerSpawn
+	// adjust spawnpoint if necessary
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
 		prisonMotd(event.getPlayer());
@@ -202,7 +207,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	// called when a player joins or spawns
-	// returns true if the player was freed while offline
 	private void prisonMotd(Player player) {
 		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if player is imprisoned
 			for (String line : getConfig().getStringList("prison_motd")) // give him prison_motd
@@ -254,20 +258,20 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 			if (pp != null && pp.getHolderPlayer() == damager) // if this damager has already imprisoned this person
 				break; // don't be confusing and re-imprison him, just let him die
 			
-			int firstpearl = Integer.MAX_VALUE;
+			int firstpearl = Integer.MAX_VALUE; // find the first regular enderpearl in their inventory
 			for (Entry<Integer, ? extends ItemStack> entry : damager.getInventory().all(Material.ENDER_PEARL).entrySet()) {
 				if (entry.getValue().getDurability() == 0)
 					firstpearl = Math.min(entry.getKey(), firstpearl);
 			}
 			
-			if (firstpearl == Integer.MAX_VALUE)
-				continue;
+			if (firstpearl == Integer.MAX_VALUE) // no pearl
+				continue; // no imprisonment
 			
-			if (getConfig().getBoolean("prison_musthotbar") && firstpearl > 9)
-				continue;
+			if (getConfig().getBoolean("prison_musthotbar") && firstpearl > 9) // bail if it must be in the hotbar
+				continue; 
 				
 			if (pearlman.imprisonPlayer(player, damager)) // otherwise, try to imprison
-				continue;
+				break;
 		}
 	}
 
@@ -483,8 +487,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	private boolean imprisonCmd(CommandSender sender, String args[]) {
 		if (args.length != 1)
 			return false;
-		if (!(sender instanceof Player))
+		if (!(sender instanceof Player)) {
 			sender.sendMessage("imprison cannot be used at the console");
+			return true;
+		}
 		
 		if (pearlman.imprisonPlayer(args[0], (Player)sender)) {
 			sender.sendMessage("You imprisoned " + args[0]);
