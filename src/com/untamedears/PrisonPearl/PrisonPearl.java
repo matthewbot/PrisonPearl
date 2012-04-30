@@ -95,7 +95,7 @@ public class PrisonPearl {
 	
 	public Location getLocation() {
 		if (player != null) {
-			return player.getLocation();
+			return player.getLocation().add(0, .5, 0);
 		} else if (item != null) {
 			return item.getLocation();
 		} else if (blocklocation != null) {
