@@ -738,35 +738,56 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener, CommandEx
 	}
 	
 	// hill climbing algorithm which attempts to randomly spawn prisoners while actively avoiding pits
-	// or the obsidian pillars.
+	// the obsidian pillars, or lava.
 	private Location getPrisonSpawnLocation() {
 		Random rand = new Random();
 		Location loc = getPrisonWorld().getSpawnLocation(); // start at spawn
-		int locground = groundHeightAt(loc);
-		for (int i=0; i<20; i++) { // for up to 20 iterations
-			if (locground > 40 && locground < 70 && i > 5) // if the current candidate looks reasonable and we've iterated at least 5 times
+		for (int i=0; i<30; i++) { // for up to 20 iterations
+			if (loc.getY() > 40 && loc.getY() < 70 && i > 5 && !isLavad(loc)) // if the current candidate looks reasonable and we've iterated at least 5 times
 				return loc; // we're done
 			
-			Location newloc = loc.clone().add(rand.nextGaussian()*5, 0, rand.nextGaussian()*5); // pick a new location near the current one
-			int newlocground = groundHeightAt(newloc); // get its ground height
+			Location newloc = loc.clone().add(rand.nextGaussian()*(2*i), 0, rand.nextGaussian()*(2*i)); // pick a new location near the current one
+			newloc = moveToGround(newloc);
+			if (newloc == null)
+				continue;
 			
-			if (newlocground > locground+(int)(rand.nextGaussian()*3) || locground > 70) { // if its better in a fuzzy sense, or if the current location is too high
+			if (newloc.getY() > loc.getY()+(int)(rand.nextGaussian()*3) || loc.getY() > 70) // if its better in a fuzzy sense, or if the current location is too high
 				loc = newloc; // it becomes the new current location
-				locground = newlocground;
-			}
 		}
 
 		return loc;
 	}
 	
-	private int groundHeightAt(Location loc) {
+	private Location moveToGround(Location loc) {
 		Location ground = new Location(loc.getWorld(), loc.getX(), 100, loc.getZ());
 		while (ground.getBlockY() >= 1) {
 			if (!ground.getBlock().isEmpty())
-				return ground.getBlockY();
+				return ground;
 			ground.add(0, -1, 0);
 		}
-		return 0;
+		return null;
+	}
+	
+	private boolean isLavad(Location loc) {
+		Location ground = new Location(loc.getWorld(), loc.getX(), 100, loc.getZ());
+		while (ground.getBlockY() >= 1) {
+			if (!ground.getBlock().isEmpty())
+				break;
+				
+			ground.add(0, -1, 0);
+		}
+		
+		for (int x=-2; x<=2; x++) {
+			for (int y=-2; y<=2; y++) {
+				for (int z=-2; z<=2; z++) {
+					Location l = ground.clone().add(x, y, z);
+					if (l.getBlock().getType() == Material.LAVA || l.getBlock().getType() == Material.STATIONARY_LAVA)
+						return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	private Location fuzzLocation(Location loc) {
