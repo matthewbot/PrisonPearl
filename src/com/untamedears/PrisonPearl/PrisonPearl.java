@@ -27,7 +27,7 @@ public class PrisonPearl {
 		this.player = holderplayer;
 	}
 	
-	public <ItemBlock extends BlockState & InventoryHolder> PrisonPearl(short id, String imprisonedname, Location blocklocation) {
+	public PrisonPearl(short id, String imprisonedname, Location blocklocation) {
 		this.id = id;
 		this.imprisonedname = imprisonedname;
 		this.blocklocation = blocklocation;
