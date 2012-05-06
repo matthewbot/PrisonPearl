@@ -248,14 +248,25 @@ public class PrisonPearlManager implements Listener {
 		if (newitem != null)
 			event.setCurrentItem(newitem);
 		
-		PrisonPearl pp = pearls.getByItemStack(event.getCursor());
+		
+		PrisonPearl pp;
+		if (!event.isShiftClick()) {
+			pp = pearls.getByItemStack(event.getCursor());
+		} else {
+			pp = pearls.getByItemStack(event.getCurrentItem());
+		}
+		
 		if (pp == null)
 			return;
-
+		
 		InventoryView view = event.getView();
 		int rawslot = event.getRawSlot();
+		boolean top = view.convertSlot(rawslot) == rawslot; // this means in the top inventory
+		if (event.isShiftClick()) // for shift clicks, a click in the bottom moves item to the top and vice versa
+			top = !top; // so flip it
+		
 		InventoryHolder holder;
-		if (view.convertSlot(rawslot) == rawslot) { // this means in the top inventory
+		if (top) { 
 			holder = view.getTopInventory().getHolder();
 		} else {
 			holder = view.getBottomInventory().getHolder();
