@@ -114,7 +114,7 @@ public class SummonManager implements Listener, SaveLoad {
 		if (summons.containsKey(player.getName()))
 			return false;
 		
-		Summon summon = new Summon(player.getName(), player.getLocation(), dist);
+		Summon summon = new Summon(player.getName(), player.getLocation().add(0, -.5, 0), dist);
 		summons.put(summon.getSummonedName(), summon);
 		
 		if (!summonEvent(pp, SummonEvent.Type.SUMMONED, pp.getLocation())) {
