@@ -19,7 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -28,10 +27,6 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import com.wolvereness.physicalshop.Shop;
-import com.wolvereness.physicalshop.ShopMaterial;
-import com.wolvereness.physicalshop.events.ShopInteractEvent;
 
 public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private PrisonPearlStorage pearls;
@@ -57,6 +52,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		portalman = new PrisonPortaledPlayerManager(this, pearls);
 		load(portalman, getPortaledPlayersFile());
 		broadcastman = new BroadcastManager();
+		if (Bukkit.getPluginManager().isPluginEnabled("PhysicalShop"))
+			new PhysicalShopListener(this, pearls);
 		
 		Bukkit.getPluginManager().registerEvents(this, this);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
@@ -337,26 +334,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			break;
 		}
 	}
-	
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onShopInteract(ShopInteractEvent event) {
-		if (event.getAction() != Action.LEFT_CLICK_BLOCK)
-			return;
-		
-		Shop shop = event.getShop();
-		if (shop.getShopItems() == 0)
-			return;
-		
-		ShopMaterial mat = shop.getMaterial();
-		if (mat == null || mat.getMaterial() != Material.ENDER_PEARL || mat.getDurability() == 0)
-			return;
-		
-		PrisonPearl pp = pearls.getByID(mat.getDurability());
-		if (pp == null)
-			return;
-		
-		event.getPlayer().sendMessage("The pearl sold by the shop contains " + pp.getImprisonedName());
-	}
+
 	
 	private void updateAttachment(Player player) {
 		PermissionAttachment attachment = attachments.get(player.getName());
