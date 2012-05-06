@@ -52,11 +52,11 @@ commands:
    ppbroadcast:
       description: Broadcast your pplocate commands to another player
       usage: /ppbroadcast player
+      alias: ppb
       
    ppconfirm:
       description: Confirm reception of pplocate commands from a player
       usage: /ppconfirm [player]
-      alias: ppb
       
    ppsilence:
       description: Silence reception of pplocate commands from player
