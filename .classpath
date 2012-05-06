@@ -7,6 +7,7 @@
 			<attribute name="javadoc_location" value="http://jd.bukkit.org/apidocs/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/home/matthewbot/projects/civcraft/server/craftbukkit.jar"/>
+	<classpathentry kind="lib" path="PhysicalShop.jar"/>
+	<classpathentry kind="lib" path="craftbukkit.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
