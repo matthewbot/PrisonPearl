@@ -25,14 +25,14 @@ public class SummonManager implements Listener, SaveLoad {
 	private PrisonPearlPlugin plugin;
 	private PrisonPearlStorage pearls;
 	
-	private Map<String, Location> summoned_pearls;
+	private Map<String, Summon> summons;
 	private boolean dirty;
 	
 	public SummonManager(PrisonPearlPlugin plugin, PrisonPearlStorage pearls) {
 		this.plugin = plugin;
 		this.pearls = pearls;
 		
-		summoned_pearls = new HashMap<String, Location>();
+		summons = new HashMap<String, Summon>();
 		
 		Bukkit.getPluginManager().registerEvents(this, plugin);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
@@ -55,11 +55,12 @@ public class SummonManager implements Listener, SaveLoad {
 			String[] parts = line.split(" ");
 			String name = parts[0];
 			Location loc = new Location(Bukkit.getWorld(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
+			int dist = parts.length == 6 ? Integer.parseInt(parts[5]) : 20;
 			
 			if (!pearls.isImprisoned(name))
 				continue;
 			
-			summoned_pearls.put(name, loc);
+			summons.put(name, new Summon(name, loc, dist));
 		}
 		
 		fis.close();
@@ -70,9 +71,10 @@ public class SummonManager implements Listener, SaveLoad {
 		FileOutputStream fos = new FileOutputStream(file);
 		BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fos));
 		
-		for (Entry<String, Location> entry : summoned_pearls.entrySet()) {
-			Location loc = entry.getValue();
-			br.append(entry.getKey() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
+		for (Entry<String, Summon> entry : summons.entrySet()) {
+			Summon summon = entry.getValue();
+			Location loc = summon.getReturnLocation();
+			br.append(summon.getSummonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + summon.getAllowedDistance() + "\n");
 		}
 		
 		br.flush();
@@ -81,12 +83,12 @@ public class SummonManager implements Listener, SaveLoad {
 	}
 	
 	private void inflictSummonDamage() {
-		Iterator<Entry<String, Location>> i = summoned_pearls.entrySet().iterator();
+		Iterator<Entry<String, Summon>> i = summons.entrySet().iterator();
 		while (i.hasNext()) {
-			Entry<String, Location> entry = i.next();
-			PrisonPearl pp = pearls.getByImprisoned(entry.getKey());
+			Summon summon = i.next().getValue();
+			PrisonPearl pp = pearls.getByImprisoned(summon.getSummonedName());
 			if (pp == null) {
-				System.err.println("Somehow " + entry.getKey() + " got summoned but isn't imprisoned");
+				System.err.println("Somehow " + summon.getSummonedName() + " was summoned but isn't imprisoned");
 				i.remove();
 				dirty = true;
 				continue;
@@ -97,25 +99,26 @@ public class SummonManager implements Listener, SaveLoad {
 				continue;
 			
 			Location pploc = pp.getLocation();
-			Location playerloc = pp.getImprisonedPlayer().getLocation();
+			Location playerloc = player.getLocation();
 			
-			if (pploc.getWorld() != playerloc.getWorld() || pploc.distance(playerloc) > plugin.getConfig().getDouble("summon_damage_radius"))
+			if (pploc.getWorld() != playerloc.getWorld() || pploc.distance(playerloc) > summon.getAllowedDistance())
 				player.damage(plugin.getConfig().getInt("summon_damage_amt"));
 		}
 	}
 	
-	public boolean summonPearl(PrisonPearl pp, Location loc) {
+	public boolean summonPearl(PrisonPearl pp, Location loc, int dist) {
 		Player player = pp.getImprisonedPlayer();
 		if (player == null || player.isDead())
 			return false;
 		
-		if (summoned_pearls.containsKey(player.getName()))
+		if (summons.containsKey(player.getName()))
 			return false;
 		
-		summoned_pearls.put(player.getName(), player.getLocation());
+		Summon summon = new Summon(player.getName(), player.getLocation(), dist);
+		summons.put(summon.getSummonedName(), summon);
 		
-		if (!summonEvent(pp, SummonEvent.Type.SUMMONED, loc)) {
-			summoned_pearls.remove(player.getName());
+		if (!summonEvent(pp, SummonEvent.Type.SUMMONED, pp.getLocation())) {
+			summons.remove(player.getName());
 			return false;
 		}
 		
@@ -124,12 +127,12 @@ public class SummonManager implements Listener, SaveLoad {
 	}
 	
 	public boolean returnPearl(PrisonPearl pp) {
-		Location loc = summoned_pearls.remove(pp.getImprisonedName());
-		if (loc == null)
+		Summon summon = summons.remove(pp.getImprisonedName());
+		if (summon == null)
 			return false;
 		
-		if (!summonEvent(pp, SummonEvent.Type.RETURNED, loc)) {
-			summoned_pearls.put(pp.getImprisonedName(), loc);
+		if (!summonEvent(pp, SummonEvent.Type.RETURNED, summon.getReturnLocation())) {
+			summons.put(pp.getImprisonedName(), summon);
 			return false;
 		}
 		
@@ -138,12 +141,12 @@ public class SummonManager implements Listener, SaveLoad {
 	}
 	
 	public boolean killPearl(PrisonPearl pp) {
-		Location loc = summoned_pearls.remove(pp.getImprisonedName());
-		if (loc == null)
+		Summon summon = summons.remove(pp.getImprisonedName());
+		if (summon == null)
 			return false;
 		
-		if (!summonEvent(pp, SummonEvent.Type.KILLED)) {
-			summoned_pearls.put(pp.getImprisonedName(), loc);
+		if (!summonEvent(pp, SummonEvent.Type.KILLED, summon.getReturnLocation())) {
+			summons.put(pp.getImprisonedName(), summon);
 			return false;
 		}
 		
@@ -153,11 +156,19 @@ public class SummonManager implements Listener, SaveLoad {
 	}
 	
 	public boolean isSummoned(Player player) {
-		return summoned_pearls.containsKey(player.getName());
+		return summons.containsKey(player.getName());
 	}
 	
 	public boolean isSummoned(PrisonPearl pp) {
-		return summoned_pearls.containsKey(pp.getImprisonedName());
+		return summons.containsKey(pp.getImprisonedName());
+	}
+	
+	public Summon getSummon(Player player) {
+		return summons.get(player.getName());
+	}
+	
+	public Summon getSummon(String name) {
+		return summons.get(name);
 	}
 	
 	@EventHandler(priority=EventPriority.HIGHEST)
@@ -166,26 +177,30 @@ public class SummonManager implements Listener, SaveLoad {
 			return;
 
 		Player player = (Player)event.getEntity();
-		if (!isSummoned(player))
+		Summon summon = summons.remove(player.getName());
+		if (summon == null)
 			return;
-		summoned_pearls.remove(player.getName());
 		dirty = true;
 		
 		PrisonPearl pp = pearls.getByImprisoned(player);
-		if (pp != null)
-			summonEvent(pp, SummonEvent.Type.DIED);
+		if (pp == null)
+			return;
+		
+		summonEvent(pp, SummonEvent.Type.DIED);
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPrisonPearlEvent(PrisonPearlEvent event) {
 		if (event.getType() == PrisonPearlEvent.Type.FREED) {
-			summoned_pearls.remove(event.getPrisonPearl().getImprisonedName());
+			summons.remove(event.getPrisonPearl().getImprisonedName());
 			dirty = true;
 		}
 	}
 	
 	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type) {
-		return summonEvent(pp, type, null);
+		SummonEvent event = new SummonEvent(pp, type);
+		Bukkit.getPluginManager().callEvent(event);
+		return !event.isCancelled();
 	}
 	
 	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type, Location loc) {

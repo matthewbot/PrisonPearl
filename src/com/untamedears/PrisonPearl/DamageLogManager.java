@@ -1,5 +1,6 @@
 package com.untamedears.PrisonPearl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -17,6 +18,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -40,7 +42,11 @@ public class DamageLogManager implements Runnable, Listener {
 		if (log != null)
 			return log.getDamagers(plugin.getConfig().getInt("damagelog_min"));
 		else
-			return null;
+			return new ArrayList<Player>();
+	}
+	
+	public boolean hasDamageLog(Player player) {
+		return logs.containsKey(player.getName());
 	}
 	
 	// Create damage logs
@@ -122,6 +128,11 @@ public class DamageLogManager implements Runnable, Listener {
 			return;
 
 		logs.remove(((Player)event.getEntity()).getName());
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerQuit(PlayerQuitEvent event) {
+		logs.remove(event.getPlayer().getName());
 	}
 	
 	public void run() {

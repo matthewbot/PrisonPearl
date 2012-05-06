@@ -16,13 +16,15 @@ import org.bukkit.inventory.ItemStack;
 public class PrisonPearlCommands implements CommandExecutor {
 	private PrisonPearlPlugin plugin;
 	private PrisonPearlStorage pearls;
+	private DamageLogManager damageman;
 	private PrisonPearlManager pearlman;
 	private SummonManager summonman;
 	private BroadcastManager broadcastman;
 	
-	public PrisonPearlCommands(PrisonPearlPlugin plugin, PrisonPearlStorage pearls, PrisonPearlManager pearlman, SummonManager summonman, BroadcastManager broadcastman) {
+	public PrisonPearlCommands(PrisonPearlPlugin plugin, DamageLogManager damageman, PrisonPearlStorage pearls, PrisonPearlManager pearlman, SummonManager summonman, BroadcastManager broadcastman) {
 		this.plugin = plugin;
 		this.pearls = pearls;
+		this.damageman = damageman;
 		this.pearlman = pearlman;
 		this.summonman = summonman;
 		this.broadcastman = broadcastman;
@@ -115,7 +117,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 			
 			Player player = (Player)sender;
 			
-			int slot = getCommandPearlSlot(player, args);
+			int slot = getCommandPearlSlot(player, args, 0);
 			if (slot == -1)
 				return true;
 			
@@ -162,19 +164,45 @@ public class PrisonPearlCommands implements CommandExecutor {
 	}
 	
 	private boolean summonCmd(CommandSender sender, String args[]) {
-		if (args.length > 1)
+		if (args.length > 2)
 			return false;
 		
 		if (!(sender instanceof Player)) {
 			sender.sendMessage("Command cannot be used at console");
 			return true;
 		}
-		
 		Player player = (Player)sender;
-		PrisonPearl pp = getCommandPearl(player, args);
+		
+		int dist = plugin.getConfig().getInt("summon_damage_radius");
+		PrisonPearl pp;
+		if (args.length == 2) {
+			try {
+				dist = Integer.parseInt(args[1]);
+				pp = getCommandPearl(player, args, 0);
+			} catch (NumberFormatException e) { 
+				sender.sendMessage("Invalid summon radius '" + args[1] + "'");
+				return false;
+			}
+		} else if (args.length == 1) {
+			try {
+				dist = Integer.parseInt(args[0]);
+				pp = getCommandPearl(player, args, 1);
+			} catch (NumberFormatException e) {
+				pp = getCommandPearl(player, args, 0);
+			}
+		} else {
+			pp = getCommandPearl(player, args, 0);
+		}
+		
 		if (pp == null)
 			return true;
-	
+		
+		if (args.length > 0) {
+			try {
+				dist = Integer.parseInt(args[args.length-1]);
+			} catch (NumberFormatException e) { }
+		}
+		
 		if (pp.getImprisonedPlayer() == null || pp.getImprisonedPlayer().isDead()) {
 			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
 			return true;
@@ -186,7 +214,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 			
-		if (summonman.summonPearl(pp, player.getLocation()))
+		if (summonman.summonPearl(pp, player.getLocation(), dist))
 			sender.sendMessage("You've summoned " + pp.getImprisonedName());
 		else
 			sender.sendMessage("You failed to summon " + pp.getImprisonedName());
@@ -203,7 +231,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 		}
 		
 		Player player = (Player)sender;
-		PrisonPearl pp = getCommandPearl(player, args); 
+		PrisonPearl pp = getCommandPearl(player, args, 0); 
 		if (pp == null)
 			return true;
 		
@@ -212,6 +240,9 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		} else if (!summonman.isSummoned(pp)) {
 			sender.sendMessage(pp.getImprisonedName() + " has not been summoned!");
+			return true;
+		} else if (damageman.hasDamageLog(player)) {
+			sender.sendMessage(pp.getImprisonedName() + " is in combat and cannot be returned!");
 			return true;
 		}
 			
@@ -232,7 +263,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 		}
 		
 		Player player = (Player)sender;
-		PrisonPearl pp = getCommandPearl(player, args);
+		PrisonPearl pp = getCommandPearl(player, args, 0);
 		if (pp == null)
 			return true;
 	
@@ -350,16 +381,16 @@ public class PrisonPearlCommands implements CommandExecutor {
 		return true;
 	}
 	
-	private PrisonPearl getCommandPearl(Player player, String args[]) {
-		int slot = getCommandPearlSlot(player, args);
+	private PrisonPearl getCommandPearl(Player player, String args[], int pos) {
+		int slot = getCommandPearlSlot(player, args, pos);
 		if (slot != -1)
 			return pearls.getByItemStack(player.getInventory().getItem(slot));
 		else
 			return null;
 	}
 	
-	private int getCommandPearlSlot(Player player, String args[]) {
-		if (args.length == 0) {
+	private int getCommandPearlSlot(Player player, String args[], int pos) {
+		if (args.length <= pos) {
 			ItemStack item = player.getItemInHand();
 			if (item.getType() != Material.ENDER_PEARL) {
 				player.sendMessage("You must hold a pearl or supply the player's name to use this command");
@@ -373,7 +404,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 			
 			return player.getInventory().getHeldItemSlot();
 		} else {		
-			PrisonPearl pp = pearls.getByImprisoned(args[0]);
+			PrisonPearl pp = pearls.getByImprisoned(args[pos]);
 			if (pp != null) {
 				Inventory inv = player.getInventory();
 				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {

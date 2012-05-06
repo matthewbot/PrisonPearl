@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -61,7 +60,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			}
 		}, 0, getConfig().getLong("save_ticks"));
 		
-		PrisonPearlCommands commands = new PrisonPearlCommands(this, pearls, pearlman, summonman, broadcastman);
+		PrisonPearlCommands commands = new PrisonPearlCommands(this, damageman, pearls, pearlman, summonman, broadcastman);
 		for (String command : getDescription().getCommands().keySet()) {
 			if (command.equals("ppkill") && !getConfig().getBoolean("ppkill_enabled"))
 				continue;
@@ -240,11 +239,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 				return;
 		}
 		
-		List<Player> damagers = damageman.getDamagers(player); // get all the players who helped kill this guy
-		if (damagers == null)
-			return;
-		
-		for (Player damager : damagers) { // check to see if anyone can imprison him
+		for (Player damager : damageman.getDamagers(player)) { // check to see if anyone can imprison him
 			if (pp != null && pp.getHolderPlayer() == damager) // if this damager has already imprisoned this person
 				break; // don't be confusing and re-imprison him, just let him die
 			
