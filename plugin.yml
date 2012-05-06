@@ -55,10 +55,16 @@ commands:
    ppconfirm:
       description: Confirm reception of pplocate commands from a player
       usage: /ppconfirm [player]
+      alias: ppb
       
    ppsilence:
       description: Silence reception of pplocate commands from player
       usage: /ppsilence player
+     
+   ppinfo:
+      description: Get information about player in a pearl
+      usage: /ppinfo [player]
+      alias: ppi
       
 permissions:
    prisonpearl.*:
@@ -75,6 +81,9 @@ permissions:
       
    prisonpearl.freeany:
       description: Allows user to use ppfreeany to free prison pearls he does not possess
+      
+   prisonpearl.imprisonany:
+      description: Allows user to use ppimprisonany to imprison any player at will
       
    prisonpearl.save:
       description: Allows user to use ppsave command
