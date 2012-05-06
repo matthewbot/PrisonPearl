@@ -401,16 +401,16 @@ public class PrisonPearlCommands implements CommandExecutor {
 		Player imprisoned = pp.getImprisonedPlayer();
 		String status;
 		if (imprisoned == null) {
-			status = "Offline";
+			status = "offline";
 		} else if (imprisoned.isDead()) {
-			status = "Dead";
+			status = "dead";
 		} else {
 			Location loc = imprisoned.getLocation();
 			status = loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
 		}
 		
-		String pearlid = pp.getImprisonedName() + " [" + Material.ENDER_PEARL.getId() + ":" + pp.getID() + "]";
-		sender.sendMessage(pearlid + " @ " + status);
+		String pearlid = pp.getImprisonedName() + " Tag: [" + Material.ENDER_PEARL.getId() + ":" + pp.getID() + "]";
+		sender.sendMessage(pearlid + " Status: " + status);
 		return true;
 	}
 	
