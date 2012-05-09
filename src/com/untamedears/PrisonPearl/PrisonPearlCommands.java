@@ -4,7 +4,6 @@ import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -57,8 +56,6 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return confirmCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppsilence")) {
 			return silenceCmd(sender, args);
-		} else if (label.equalsIgnoreCase("ppinfo")) {
-			return infoCmd(sender, args);
 		}
 
 		return false;
@@ -381,36 +378,6 @@ public class PrisonPearlCommands implements CommandExecutor {
 		} else {
 			player.sendMessage(broadcaster.getDisplayName() + " is not broadcasting to you");
 		}
-		return true;
-	}
-	
-	private boolean infoCmd(CommandSender sender, String args[]) {
-		if (args.length > 1)
-			return false;
-		
-		if (!(sender instanceof Player)) {
-			sender.sendMessage("Command cannot be used at console");
-			return true;
-		}
-		
-		Player player = (Player)sender;
-		PrisonPearl pp = getCommandPearl(player, args, 0);
-		if (pp == null)
-			return true;
-		
-		Player imprisoned = pp.getImprisonedPlayer();
-		String status;
-		if (imprisoned == null) {
-			status = "offline";
-		} else if (imprisoned.isDead()) {
-			status = "dead";
-		} else {
-			Location loc = imprisoned.getLocation();
-			status = loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
-		}
-		
-		String pearlid = pp.getImprisonedName() + " Tag: [" + Material.ENDER_PEARL.getId() + ":" + pp.getID() + "]";
-		sender.sendMessage(pearlid + " Status: " + status);
 		return true;
 	}
 	
