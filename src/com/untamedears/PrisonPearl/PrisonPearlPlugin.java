@@ -9,11 +9,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -35,6 +37,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private SummonManager summonman;
 	private PrisonPortaledPlayerManager portalman;
 	private BroadcastManager broadcastman;
+	private AltsList altsList;
+	public static Logger log = Bukkit.getLogger();
+	private static Integer maxImprisonedAlts = 2;
+	private static String kickMessage = "You have too many imprisoned alts accounts!";
+	
 	
 	private Map<String, PermissionAttachment> attachments;
 	
@@ -52,6 +59,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		portalman = new PrisonPortaledPlayerManager(this, pearls);
 		load(portalman, getPortaledPlayersFile());
 		broadcastman = new BroadcastManager();
+
+		altsList = new AltsList();
+		altsList.load(getAltsListFile());
+		
 		if (Bukkit.getPluginManager().isPluginEnabled("PhysicalShop"))
 			new PhysicalShopListener(this, pearls);
 		
@@ -146,12 +157,39 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		return new File(getDataFolder(), "portaledplayers.txt");
 	}
 	
+	
+	private File getAltsListFile() {
+		return new File(getDataFolder(), "alts.txt");
+	}
+	
+	
 	// Free player if he was free'd while offline
 	// otherwise, correct his spawn location if necessary
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
 		updateAttachment(player);
+		
+		
+		String[] altsArray = altsList.getAltsArray(player.getName());
+		
+		if (altsArray.length >= maxImprisonedAlts) {
+			Integer pearledCount = pearls.getImprisonedCount(altsArray);
+			String[] imprisonedNames = pearls.getImprisonedNames(altsArray);
+			String names = "";
+			for (int i = 0; i < imprisonedNames.length; i++) {
+				names = names + imprisonedNames[i];
+				if (i < imprisonedNames.length-1) {
+					names = names + ", ";
+				}
+			}
+			log.info("[PrisonPearl] "+player.getName()+" has "+ pearledCount +" imprisoned alts: "+names);
+			if (pearledCount >= maxImprisonedAlts && !pearls.isImprisoned(player.getName())) {
+				player.kickPlayer(kickMessage);
+				log.info("[PrisonPearl] "+player.getName()+" disconnected for having too many alts imprisoned.");
+			}
+		}
+		
 		
 		if (player.isDead())
 			return;
@@ -280,6 +318,24 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			Player imprisoner = event.getImprisoner();
 			imprisoner.sendMessage(ChatColor.GREEN+"You've bound " + player.getDisplayName() + ChatColor.GREEN+" to a prison pearl!");
 			player.sendMessage(ChatColor.RED+"You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
+
+			Server s = this.getServer();
+			String[] alts = altsList.getAltsArray(player.getName());
+			for (int j = 0; j < alts.length; j++) {
+				String[] tempAlts = altsList.getAltsArray(alts[j]);
+				Integer count = pearls.getImprisonedCount(tempAlts);
+				if (count >= maxImprisonedAlts) {
+					for (int i = 0; i < tempAlts.length; i++) {
+						if (!pearls.isImprisoned(tempAlts[i])) {
+							Player p = s.getPlayer(tempAlts[i]);
+							if (p != null && !pearls.isImprisoned(p.getName())) {
+								p.kickPlayer(kickMessage);
+							}
+						}
+					}
+				}
+			}
+			
 		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
 			String loc = pp.describeLocation();
 			player.sendMessage(ChatColor.GREEN + "Your prison pearl is " + loc);

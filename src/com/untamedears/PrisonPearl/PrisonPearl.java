@@ -34,6 +34,8 @@ public class PrisonPearl {
 	}
 	
 	public static PrisonPearl makeFromLocation(short id, String imprisonedname, Location loc) {
+		if (imprisonedname == null || loc == null)
+			return null;
 		BlockState bs = loc.getBlock().getState();
 		if (bs instanceof InventoryHolder)
 			return new PrisonPearl(id, imprisonedname, loc);

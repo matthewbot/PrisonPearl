@@ -8,7 +8,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
@@ -135,5 +137,30 @@ public class PrisonPearlStorage implements SaveLoad {
 	
 	boolean isImprisoned(Player player) {
 		return pearls_byimprisoned.containsKey(player.getName());
+	}
+	
+	public Integer getImprisonedCount(String[] names) {
+		Integer count = 0;
+		for (int i = 0; i < names.length; i++) {
+			if (pearls_byimprisoned.containsKey(names[i])) {
+				count++;
+			}
+		}
+		return count;
+	}
+	
+	public String[] getImprisonedNames(String[] names) {
+		List<String> iNames = new ArrayList<String>();
+		for (int i = 0; i < names.length; i++) {
+			if (pearls_byimprisoned.containsKey(names[i])) {
+				iNames.add(names[i]);
+			}
+		}
+		int count = iNames.size();
+		String[] results = new String[count];
+		for (int i = 0; i < count; i++) {
+			results[i] = iNames.get(i);
+		}
+		return results;
 	}
 }
