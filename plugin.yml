@@ -66,7 +66,9 @@ commands:
       description: Get information about player in a pearl
       usage: /ppinfo [player]
       alias: ppi
-      
+   pploadalts:
+      description: reload alt lists from file
+      usage: /pploadalts
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands

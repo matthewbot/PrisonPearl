@@ -56,6 +56,8 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return confirmCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppsilence")) {
 			return silenceCmd(sender, args);
+		} else if (label.equalsIgnoreCase("pploadalts")) {
+			return reloadAlts(sender, args);
 		}
 
 		return false;
@@ -416,5 +418,15 @@ public class PrisonPearlCommands implements CommandExecutor {
 			player.sendMessage("You don't possess " + args[0] + "'s prison pearl");
 			return -1;
 		}
+	}
+	
+	private boolean reloadAlts(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			plugin.loadAlts();
+			return true;
+		}
+		return false;
 	}
 }

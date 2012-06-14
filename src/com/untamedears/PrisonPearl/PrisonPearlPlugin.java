@@ -60,8 +60,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		load(portalman, getPortaledPlayersFile());
 		broadcastman = new BroadcastManager();
 
-		altsList = new AltsList();
-		altsList.load(getAltsListFile());
+		loadAlts();
 		
 		if (Bukkit.getPluginManager().isPluginEnabled("PhysicalShop"))
 			new PhysicalShopListener(this, pearls);
@@ -328,7 +327,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 					for (int i = 0; i < tempAlts.length; i++) {
 						if (!pearls.isImprisoned(tempAlts[i])) {
 							Player p = s.getPlayer(tempAlts[i]);
-							if (p != null && !pearls.isImprisoned(p.getName())) {
+							if (p != null) {
 								p.kickPlayer(kickMessage);
 							}
 						}
@@ -498,5 +497,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 				}
 			});
 		}
+	}
+	
+	public void loadAlts() {
+		if (altsList == null) {
+			altsList = new AltsList();
+		}
+		altsList.load(getAltsListFile());
 	}
 }
