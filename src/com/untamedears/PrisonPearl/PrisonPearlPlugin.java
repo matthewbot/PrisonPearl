@@ -227,9 +227,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 	}
 	
-	// remove permission attachments
+	// remove permission attachments and record the time players log out
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
+		Player player = event.getPlayer();
+		Long time = System.currentTimeMillis();
+		lastLoggout.put(player.getName(), time);
 		PermissionAttachment attachment = attachments.remove(event.getPlayer().getName());
 		if (attachment != null)
 			attachment.remove();
@@ -395,15 +398,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			break;
 		}
 	}
-	
-	//record the time players log out
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerQuitEvent (PlayerQuitEvent e) {
-		Player player = e.getPlayer();
-		Long time = System.currentTimeMillis();
-		lastLoggout.put(player.getName(), time);
-	}
-
 	
 	private void updateAttachment(Player player) {
 		PermissionAttachment attachment = attachments.get(player.getName());
