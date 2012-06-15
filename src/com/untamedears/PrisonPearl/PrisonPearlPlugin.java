@@ -40,14 +40,18 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private AltsList altsList;
 	public static Logger log = Bukkit.getLogger();
 	private static Integer maxImprisonedAlts = 2;
-	private static String kickMessage = "You have too many imprisoned alts accounts!";
-	
+	private static long loginDelay = 10*60*1000;
+	private static String kickMessage = "You have too many imprisoned alts accounts! If you believe this is an error, please message the mods on www.reddit.com/r/civcraft";
+	private static String delayMessage = "You cannot switch alt accounts that quickly!";
+	private HashMap<String, Long> lastLoggout;
 	
 	private Map<String, PermissionAttachment> attachments;
 	
 	public void onEnable() {
 		getConfig().options().copyDefaults(true);
 		saveConfig();
+		
+		lastLoggout = new HashMap<String, Long>();
 		
 		pearls = new PrisonPearlStorage();
 		load(pearls, getPrisonPearlsFile());
@@ -167,10 +171,16 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
+		Long time = System.currentTimeMillis();
 		updateAttachment(player);
 		
-		
 		String[] altsArray = altsList.getAltsArray(player.getName());
+		Long lastLoggout = getMostRecentAltLogout(altsArray);
+		
+		if (time - lastLoggout < loginDelay) {
+			player.kickPlayer(delayMessage);
+			log.info("[PrisonPearl] "+player.getName()+" logged out with an alt "+(time-lastLoggout)+" milliseconds ago so was kicked.");
+		}
 		
 		if (altsArray.length >= maxImprisonedAlts) {
 			Integer pearledCount = pearls.getImprisonedCount(altsArray);
@@ -183,7 +193,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 				}
 			}
 			log.info("[PrisonPearl] "+player.getName()+" has "+ pearledCount +" imprisoned alts: "+names);
-			if (pearledCount >= maxImprisonedAlts && !pearls.isImprisoned(player.getName())) {
+			if (pearledCount >= maxImprisonedAlts && (!pearls.isImprisoned(player.getName()) || player.getLocation().getWorld() != getPrisonWorld())) {
 				player.kickPlayer(kickMessage);
 				log.info("[PrisonPearl] "+player.getName()+" disconnected for having too many alts imprisoned.");
 			}
@@ -321,16 +331,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			Server s = this.getServer();
 			String[] alts = altsList.getAltsArray(player.getName());
 			for (int j = 0; j < alts.length; j++) {
-				String[] tempAlts = altsList.getAltsArray(alts[j]);
-				Integer count = pearls.getImprisonedCount(tempAlts);
-				if (count >= maxImprisonedAlts) {
-					for (int i = 0; i < tempAlts.length; i++) {
-						if (!pearls.isImprisoned(tempAlts[i])) {
-							Player p = s.getPlayer(tempAlts[i]);
-							if (p != null) {
-								p.kickPlayer(kickMessage);
-							}
-						}
+				Player p = s.getPlayer(alts[j]);
+				if (p != null && (!pearls.isImprisoned(alts[j]) || p.getLocation().getWorld() != getPrisonWorld())) {
+					String[] tempAlts = altsList.getAltsArray(alts[j]);
+					Integer count = pearls.getImprisonedCount(tempAlts);
+					if (count >= maxImprisonedAlts) {
+						p.kickPlayer(kickMessage);
 					}
 				}
 			}
@@ -388,6 +394,14 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			player.sendMessage(ChatColor.RED+"You've been struck down by your pearl!");
 			break;
 		}
+	}
+	
+	//record the time players log out
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerQuitEvent (PlayerQuitEvent e) {
+		Player player = e.getPlayer();
+		Long time = System.currentTimeMillis();
+		lastLoggout.put(player.getName(), time);
 	}
 
 	
@@ -504,5 +518,20 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			altsList = new AltsList();
 		}
 		altsList.load(getAltsListFile());
+	}
+	
+	//gets the most recent time an alt account has logged out (returns 0 if there are none recorded)
+	private Long getMostRecentAltLogout(String[] alts) {
+		Long time = new Long(0);
+		Long temp;
+		for (int i = 0; i < alts.length; i++) {
+			if (lastLoggout.containsKey(alts[i])) {
+				temp = lastLoggout.get(alts[i]);
+				if (temp > time) {
+					time = temp;
+				}
+			}
+		}
+		return time;
 	}
 }
