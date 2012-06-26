@@ -1,6 +1,6 @@
 name: PrisonPearl
 main: com.untamedears.PrisonPearl.PrisonPearlPlugin
-version: 1.4.2
+version: 1.4.7
 soft-depend: [PhysicalShop]
 
 commands:
@@ -69,6 +69,13 @@ commands:
    pploadalts:
       description: reload alt lists from file
       usage: /pploadalts
+   ppcheckall:
+      description: checkban all accounts
+      usage: /ppcheckall
+   ppcheck:
+      description: checkban the player
+      usage: /ppcheck [player]
+
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands

@@ -58,6 +58,10 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return silenceCmd(sender, args);
 		} else if (label.equalsIgnoreCase("pploadalts")) {
 			return reloadAlts(sender, args);
+		} else if (label.equalsIgnoreCase("ppcheckall")) {
+			return checkAll(sender);
+		} else if (label.equalsIgnoreCase("ppcheck")) {
+			return check(sender, args);
 		}
 
 		return false;
@@ -425,6 +429,30 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return false;
 		if (!(sender instanceof Player)) {
 			plugin.loadAlts();
+			plugin.checkBanAllAlts();
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean checkAll(CommandSender sender) {
+		if (!(sender instanceof Player)) {
+			plugin.checkBanAllAlts();
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean check(CommandSender sender, String[] args) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			boolean isBanned = plugin.isTempBanned(args[0]);
+			if (isBanned) {
+				sender.sendMessage(args[0]+" is temp banned for having "+plugin.getImprisonedCount(args[0])+" imprisoned accounts: "+plugin.getImprisonedAltsString(args[0]));
+			} else {
+				sender.sendMessage(args[0]+" is not temp banned");
+			}
 			return true;
 		}
 		return false;
