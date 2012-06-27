@@ -57,7 +57,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 		} else if (label.equalsIgnoreCase("ppsilence")) {
 			return silenceCmd(sender, args);
 		} else if (label.equalsIgnoreCase("pploadalts")) {
-			return reloadAlts(sender, args);
+			return reloadAlts(sender);
 		} else if (label.equalsIgnoreCase("ppcheckall")) {
 			return checkAll(sender);
 		} else if (label.equalsIgnoreCase("ppcheck")) {
@@ -424,9 +424,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 		}
 	}
 	
-	private boolean reloadAlts(CommandSender sender, String args[]) {
-		if (args.length != 1)
-			return false;
+	private boolean reloadAlts(CommandSender sender) {
 		if (!(sender instanceof Player)) {
 			plugin.loadAlts();
 			plugin.checkBanAllAlts();
