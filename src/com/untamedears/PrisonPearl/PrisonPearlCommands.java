@@ -62,6 +62,8 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return checkAll(sender);
 		} else if (label.equalsIgnoreCase("ppcheck")) {
 			return check(sender, args);
+		} else if (label.equalsIgnoreCase("kill")) {
+			return kill(sender);
 		}
 
 		return false;
@@ -453,6 +455,10 @@ public class PrisonPearlCommands implements CommandExecutor {
 			}
 			return true;
 		}
+		return false;
+	}
+	
+	private boolean kill(CommandSender sender) {
 		return false;
 	}
 }

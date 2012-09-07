@@ -9,5 +9,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="PhysicalShop.jar"/>
 	<classpathentry kind="lib" path="craftbukkit.jar"/>
+	<classpathentry kind="lib" path="D:/Java/PrisonPearl/CombatTag.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

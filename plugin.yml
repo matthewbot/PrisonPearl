@@ -1,7 +1,7 @@
 name: PrisonPearl
 main: com.untamedears.PrisonPearl.PrisonPearlPlugin
-version: 1.4.8
-soft-depend: [PhysicalShop]
+version: 1.5.0
+soft-depend: [PhysicalShop, CombatTag]
 
 commands:
    pplocate:

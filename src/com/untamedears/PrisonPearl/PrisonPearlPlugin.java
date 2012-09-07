@@ -45,8 +45,9 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private static String kickMessage = "You have too many imprisoned alts! If you think this is an error, please message the mods on /r/civcraft";
 	//private static String delayMessage = "You cannot switch alt accounts that quickly, please wait ";
 	private HashMap<String, Long> lastLoggout;
-	//private HashMap<String, Boolean> wasKicked;
 	private HashMap<String, Boolean> banned;
+	
+	private CombatTagManager combatTagManager;
 	
 	private Map<String, PermissionAttachment> attachments;
 	
@@ -70,6 +71,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		portalman = new PrisonPortaledPlayerManager(this, pearls);
 		load(portalman, getPortaledPlayersFile());
 		broadcastman = new BroadcastManager();
+		combatTagManager = new CombatTagManager(this.getServer(), log);
 
 		loadAlts();
 		checkBanAllAlts();
@@ -180,39 +182,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
-		//Long time = System.currentTimeMillis();
 		updateAttachment(player);
 		checkBan(player.getName());
-		/*
-		String[] altsArray = altsList.getAltsArray(player.getName());
-		Long lastLoggout = getMostRecentAltLogout(altsArray);
-		
-		if (altsArray.length >= maxImprisonedAlts && time - lastLoggout < loginDelay) {
-			player.kickPlayer(delayMessage+(time-lastLoggout)+" more milliseconds.");
-			wasKicked.put(player.getName(), true);
-			event.setJoinMessage("");
-			log.info("[PrisonPearl] "+player.getName()+" logged out with an alt "+(time-lastLoggout)+" milliseconds ago so was kicked.");
-		} else {
-			wasKicked.put(player.getName(), false);
-		}
-		
-		if (altsArray.length >= maxImprisonedAlts) {
-			Integer pearledCount = pearls.getImprisonedCount(altsArray);
-			String[] imprisonedNames = pearls.getImprisonedNames(altsArray);
-			String names = "";
-			for (int i = 0; i < imprisonedNames.length; i++) {
-				names = names + imprisonedNames[i];
-				if (i < imprisonedNames.length-1) {
-					names = names + ", ";
-				}
-			}
-			log.info("[PrisonPearl] "+player.getName()+" has "+ pearledCount +" imprisoned alts: "+names);
-			if (pearledCount >= maxImprisonedAlts && (!pearls.isImprisoned(player.getName()) || player.getLocation().getWorld() != getPrisonWorld())) {
-				player.kickPlayer(kickMessage);
-				log.info("[PrisonPearl] "+player.getName()+" disconnected for having too many alts imprisoned.");
-			}
-		}
-		*/
 		
 		if (player.isDead())
 			return;
@@ -244,15 +215,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	// remove permission attachments and record the time players log out
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		/*
-		Player player = event.getPlayer();
-		
-		Long time = System.currentTimeMillis();
-		if (wasKicked.containsKey(player.getName()) && wasKicked.get(player.getName()) == true) {
-			lastLoggout.put(player.getName(), time);
-			wasKicked.put(player.getName(), false);
-		}
-		*/
 		PermissionAttachment attachment = attachments.remove(event.getPlayer().getName());
 		if (attachment != null)
 			attachment.remove();
@@ -304,8 +266,19 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			return;
 		
 		Player player = (Player)event.getEntity();
+		String playerName = player.getName();
 		
-		PrisonPearl pp = pearls.getByImprisoned(player); // find out if the player is imprisoned
+		log.info("name: "+player.getName());
+		if (combatTagManager.isCombatTagNPC(event.getEntity()))  {
+			String npcName = player.getName();
+			String realName = combatTagManager.getNPCPlayerName(player);
+			log.info("NPC: "+npcName+", Player: "+playerName);
+			if (realName != "") {
+				playerName = realName;
+			}
+		}
+		
+		PrisonPearl pp = pearls.getByImprisoned(playerName); // find out if the player is imprisoned
 		if (pp != null) { // if imprisoned
 			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) // bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
 				return;
@@ -327,7 +300,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			if (getConfig().getBoolean("prison_musthotbar") && firstpearl > 9) // bail if it must be in the hotbar
 				continue; 
 				
-			if (pearlman.imprisonPlayer(player, damager)) // otherwise, try to imprison
+			if (pearlman.imprisonPlayer(playerName, damager)) // otherwise, try to imprison
 				break;
 		}
 	}
@@ -354,18 +327,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			Server s = this.getServer();
 			String[] alts = altsList.getAltsArray(player.getName());
 			checkBans(alts);
-			/*
-			for (int j = 0; j < alts.length; j++) {
-				Player p = s.getPlayer(alts[j]);
-				if (p != null && (!pearls.isImprisoned(alts[j]) || p.getLocation().getWorld() != getPrisonWorld())) {
-					String[] tempAlts = altsList.getAltsArray(alts[j]);
-					Integer count = pearls.getImprisonedCount(tempAlts);
-					if (count >= maxImprisonedAlts) {
-						log.info("[PrisonPearl] kicking "+p.getName()+" for being an alt of "+player.getName());
-					}
-				}
-			}
-			*/
 			
 		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
 			String loc = pp.describeLocation();
