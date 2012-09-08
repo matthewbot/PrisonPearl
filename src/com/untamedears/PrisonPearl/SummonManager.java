@@ -22,10 +22,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 
 public class SummonManager implements Listener, SaveLoad {
-	private PrisonPearlPlugin plugin;
-	private PrisonPearlStorage pearls;
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
 	
-	private Map<String, Summon> summons;
+	private final Map<String, Summon> summons;
 	private boolean dirty;
 	
 	public SummonManager(PrisonPearlPlugin plugin, PrisonPearlStorage pearls) {
@@ -79,7 +79,7 @@ public class SummonManager implements Listener, SaveLoad {
 		for (Entry<String, Summon> entry : summons.entrySet()) {
 			Summon summon = entry.getValue();
 			Location loc = summon.getReturnLocation();
-			br.append(summon.getSummonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + summon.getAllowedDistance() + summon.getDamageAmount() + summon.isCanSpeak() + summon.isCanDealDamage() + summon.isCanBreakBlocks() + "\n");
+			br.append(summon.getSummonedName()).append(" ").append(loc.getWorld().getName()).append(" ").append((char) loc.getBlockX()).append(" ").append((char) loc.getBlockY()).append(" ").append((char) loc.getBlockZ()).append(" ").append((char) summon.getAllowedDistance()).append((char) summon.getDamageAmount()).append(summon.isCanSpeak()).append(summon.isCanDealDamage()).append(summon.isCanBreakBlocks()).append("\n");
 		}
 		
 		br.flush();
@@ -111,7 +111,7 @@ public class SummonManager implements Listener, SaveLoad {
 		}
 	}
 	
-	public boolean summonPearl(PrisonPearl pp, Location loc) {
+	public boolean summonPearl(PrisonPearl pp) {
 		Player player = pp.getImprisonedPlayer();
 		if (player == null || player.isDead())
 			return false;
@@ -202,13 +202,14 @@ public class SummonManager implements Listener, SaveLoad {
 		}
 	}
 	
-	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type) {
+	private boolean summonEvent(PrisonPearl pp, @SuppressWarnings("SameParameterValue") SummonEvent.Type type) {
 		SummonEvent event = new SummonEvent(pp, type);
 		Bukkit.getPluginManager().callEvent(event);
 		return !event.isCancelled();
 	}
 	
-	private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type, Location loc) {
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean summonEvent(PrisonPearl pp, SummonEvent.Type type, Location loc) {
 		SummonEvent event = new SummonEvent(pp, type, loc);
 		Bukkit.getPluginManager().callEvent(event);
 		return !event.isCancelled();

@@ -13,13 +13,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-public class PrisonPearlCommands implements CommandExecutor {
-	private PrisonPearlPlugin plugin;
-	private PrisonPearlStorage pearls;
-	private DamageLogManager damageman;
-	private PrisonPearlManager pearlman;
-	private SummonManager summonman;
-	private BroadcastManager broadcastman;
+class PrisonPearlCommands implements CommandExecutor {
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
+	private final DamageLogManager damageman;
+	private final PrisonPearlManager pearlman;
+	private final SummonManager summonman;
+	private final BroadcastManager broadcastman;
 	
 	public PrisonPearlCommands(PrisonPearlPlugin plugin, DamageLogManager damageman, PrisonPearlStorage pearls, PrisonPearlManager pearlman, SummonManager summonman, BroadcastManager broadcastman) {
 		this.plugin = plugin;
@@ -63,7 +63,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 		} else if (label.equalsIgnoreCase("ppcheck")) {
 			return check(sender, args);
 		} else if (label.equalsIgnoreCase("kill")) {
-			return kill(sender);
+			return kill();
 		} else if (label.equalsIgnoreCase("ppsetdist")) {
             return setDistCmd(sender, args);
         } else if (label.equalsIgnoreCase("ppsetdamage")) {
@@ -114,13 +114,14 @@ public class PrisonPearlCommands implements CommandExecutor {
         return pp;
     }
 
+    @SuppressWarnings("SameReturnValue")
     private boolean setDistCmd(CommandSender sender, String args[]) {
 
         PrisonPearl pp = setCmd(sender, args);
 
         if (pp == null) {
 
-            return true;
+            return false;
         }
 
         summonman.getSummon(pp.getImprisonedName()).setAllowedDistance(Integer.parseInt(args[0]));
@@ -134,7 +135,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         if (pp == null) {
 
-            return true;
+            return false;
         }
 
         summonman.getSummon(pp.getImprisonedName()).setDamageAmount(Integer.parseInt(args[0]));
@@ -148,7 +149,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         if (pp == null) {
 
-            return true;
+            return false;
         }
 
         boolean speak = summonman.getSummon(pp.getImprisonedName()).isCanSpeak();
@@ -163,7 +164,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         if (pp == null) {
 
-            return true;
+            return false;
         }
 
         boolean damage = summonman.getSummon(pp.getImprisonedName()).isCanDealDamage();
@@ -178,7 +179,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         if (pp == null) {
 
-            return true;
+            return false;
         }
 
         boolean block = summonman.getSummon(pp.getImprisonedName()).isCanBreakBlocks();
@@ -202,12 +203,12 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         if (pp == null) {
 
-            return true;
+            return false;
         }
 
         String s = "";
-        for (int i = 0; i < args.length; i++) {
-            s += (" " + args[i]);
+        for (String arg : args) {
+            s += (" " + arg);
         }
         pp.setMotd(s);
         sender.sendMessage(pp.getImprisonedName() + "'s Message of the Day set to " + s);
@@ -352,7 +353,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 			
-		if (summonman.summonPearl(pp, player.getLocation()))
+		if (summonman.summonPearl(pp))
 			sender.sendMessage("You've summoned " + pp.getImprisonedName());
 		else
 			sender.sendMessage("You failed to summon " + pp.getImprisonedName());
@@ -588,7 +589,8 @@ public class PrisonPearlCommands implements CommandExecutor {
 		return false;
 	}
 	
-	private boolean kill(CommandSender sender) {
+	@SuppressWarnings("SameReturnValue")
+    private boolean kill() {
 		return false;
 	}
 }

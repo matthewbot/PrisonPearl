@@ -20,8 +20,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public class PrisonPearlStorage implements SaveLoad {
-	private Map<Short, PrisonPearl> pearls_byid;
-	private Map<String, PrisonPearl> pearls_byimprisoned;
+	private final Map<Short, PrisonPearl> pearls_byid;
+	private final Map<String, PrisonPearl> pearls_byimprisoned;
 	private short nextid;
 	
 	private boolean dirty;
@@ -77,8 +77,19 @@ public class PrisonPearlStorage implements SaveLoad {
 				continue;
 			
 			Location loc = pp.getLocation();
-			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
-		}
+            br.append((char) pp.getID());
+            br.append(" ");
+            br.append(pp.getImprisonedName());
+            br.append(" ");
+            br.append(loc.getWorld().getName());
+            br.append(" ");
+            br.append((char) loc.getBlockX());
+            br.append(" ");
+            br.append((char) loc.getBlockY());
+            br.append(" ");
+            br.append((char) loc.getBlockZ());
+            br.append("\n");
+        }
 		
 		br.flush();
 		fos.close();
@@ -141,21 +152,21 @@ public class PrisonPearlStorage implements SaveLoad {
 	
 	public Integer getImprisonedCount(String[] names) {
 		Integer count = 0;
-		for (int i = 0; i < names.length; i++) {
-			if (pearls_byimprisoned.containsKey(names[i])) {
-				count++;
-			}
-		}
+        for (String name : names) {
+            if (pearls_byimprisoned.containsKey(name)) {
+                count++;
+            }
+        }
 		return count;
 	}
 	
 	public String[] getImprisonedNames(String[] names) {
 		List<String> iNames = new ArrayList<String>();
-		for (int i = 0; i < names.length; i++) {
-			if (pearls_byimprisoned.containsKey(names[i])) {
-				iNames.add(names[i]);
-			}
-		}
+        for (String name : names) {
+            if (pearls_byimprisoned.containsKey(name)) {
+                iNames.add(name);
+            }
+        }
 		int count = iNames.size();
 		String[] results = new String[count];
 		for (int i = 0; i < count; i++) {

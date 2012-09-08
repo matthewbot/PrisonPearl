@@ -35,9 +35,9 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
-public class PrisonPearlManager implements Listener {
-	private PrisonPearlPlugin plugin;
-	private PrisonPearlStorage pearls;
+class PrisonPearlManager implements Listener {
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
 	
 	public PrisonPearlManager(PrisonPearlPlugin plugin, PrisonPearlStorage pearls) {
 		this.plugin = plugin;
@@ -110,11 +110,9 @@ public class PrisonPearlManager implements Listener {
 	
 	public boolean freePlayer(Player player) {
 		PrisonPearl pp = pearls.getByImprisoned(player);
-		if (pp == null)
-			return false;
-		
-		return freePearl(pp);
-	}
+        return pp != null && freePearl(pp);
+
+    }
 	
 	public boolean freePearl(PrisonPearl pp) {
 		pearls.deletePearl(pp);
@@ -328,7 +326,8 @@ public class PrisonPearlManager implements Listener {
 		Bukkit.getPluginManager().callEvent(new PrisonPearlEvent(pp, PrisonPearlEvent.Type.HELD));
 	}
 	
-	private boolean prisonPearlEvent(PrisonPearl pp, PrisonPearlEvent.Type type) {
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean prisonPearlEvent(PrisonPearl pp, @SuppressWarnings("SameParameterValue") PrisonPearlEvent.Type type) {
 		return prisonPearlEvent(pp, type, null);
 	}
 	
