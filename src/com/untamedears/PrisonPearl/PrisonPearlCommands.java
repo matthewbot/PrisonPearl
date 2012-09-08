@@ -132,6 +132,11 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         PrisonPearl pp = setCmd(sender, args);
 
+        if (pp == null) {
+
+            return true;
+        }
+
         summonman.getSummon(pp.getImprisonedName()).setDamageAmount(Integer.parseInt(args[0]));
         sender.sendMessage(pp.getImprisonedName() + "'s damage amount set to " + args[0]);
         return true;
@@ -140,6 +145,11 @@ public class PrisonPearlCommands implements CommandExecutor {
     private boolean toggleSpeechCmd(CommandSender sender, String args[]) {
 
         PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return true;
+        }
 
         boolean speak = summonman.getSummon(pp.getImprisonedName()).isCanSpeak();
         summonman.getSummon(pp.getImprisonedName()).setCanSpeak(!speak);
@@ -151,6 +161,11 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         PrisonPearl pp = setCmd(sender, args);
 
+        if (pp == null) {
+
+            return true;
+        }
+
         boolean damage = summonman.getSummon(pp.getImprisonedName()).isCanDealDamage();
         summonman.getSummon(pp.getImprisonedName()).setCanDealDamage(!damage);
         sender.sendMessage(pp.getImprisonedName() + " ability to deal damage set to " + !damage);
@@ -161,6 +176,11 @@ public class PrisonPearlCommands implements CommandExecutor {
 
         PrisonPearl pp = setCmd(sender, args);
 
+        if (pp == null) {
+
+            return true;
+        }
+
         boolean block = summonman.getSummon(pp.getImprisonedName()).isCanBreakBlocks();
         summonman.getSummon(pp.getImprisonedName()).setCanBreakBlocks(!block);
         sender.sendMessage(pp.getImprisonedName() + " ability to break blocks set to " + !block);
@@ -169,7 +189,21 @@ public class PrisonPearlCommands implements CommandExecutor {
 
     private boolean setMotdCmd(CommandSender sender, String args[]) {
 
-        PrisonPearl pp = setCmd(sender, args);
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return true;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null) {
+
+            return true;
+        }
 
         String s = "";
         for (int i = 0; i < args.length; i++) {

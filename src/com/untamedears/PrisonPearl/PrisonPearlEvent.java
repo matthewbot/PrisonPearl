@@ -5,7 +5,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 public class PrisonPearlEvent extends Event {
-	public enum Type { NEW, HELD, DROPPED, FREED };
+	public enum Type { NEW, HELD, DROPPED, FREED }
 	
 	private PrisonPearl pp;
 	private Type type;

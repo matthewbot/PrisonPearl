@@ -5,9 +5,9 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 public class SummonEvent extends Event {
-	public enum Type { SUMMONED, RETURNED, KILLED, DIED };
-	
-	private PrisonPearl pp;
+	public enum Type { SUMMONED, RETURNED, KILLED, DIED }
+
+    private PrisonPearl pp;
 	private Type type;
 	private Location location;
 	

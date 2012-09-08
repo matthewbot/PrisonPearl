@@ -12,10 +12,9 @@ import com.trc202.CombatTagApi.CombatTagApi;
 public class CombatTagManager {
 	private CombatTagApi combatTagApi;
 	private boolean combatTagEnabled = false;
-	private Logger log;
-	
+
 	public CombatTagManager(Server server, Logger l) {
-		log = l;
+        Logger log = l;
 		if(server.getPluginManager().getPlugin("CombatTag") != null) {
 			combatTagApi = new CombatTagApi((CombatTag)server.getPluginManager().getPlugin("CombatTag"));
 			combatTagEnabled = true;

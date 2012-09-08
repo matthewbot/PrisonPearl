@@ -20,8 +20,8 @@ public class Summon {
         this.damageamount = damageamount;
         this.canSpeak = canSpeak;
         this.canDealDamage = canDealDamage;
-        this.canBreakBlocks = canBreakBlocks;;
-	}
+        this.canBreakBlocks = canBreakBlocks;
+    }
 	
 	public String getSummonedName() {
 		return summonedname;

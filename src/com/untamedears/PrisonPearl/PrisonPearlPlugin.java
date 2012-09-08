@@ -561,7 +561,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		String name;
 		for (Iterator<String> names = banned.keySet().iterator(); names.hasNext();) {
 			name = names.next();
-			if (banned.get(name) == true) {
+			if (banned.get(name)) {
 				s.getOfflinePlayer(name).setBanned(false);
 				log.info("unbanning "+name);
 			}
@@ -609,7 +609,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		} else if (pearledCount == maxImprisonedAlts || (pearledCount > maxImprisonedAlts && !pearls.isImprisoned(name))) {
 			banAndKick(name,pearledCount,names);
 			return 2;
-		} else if (banned.containsKey(name) && banned.get(name) == true) {
+		} else if (banned.containsKey(name) && banned.get(name)) {
 			this.getServer().getOfflinePlayer(name).setBanned(false);
 			banned.put(name, false);
 			return 1;
