@@ -55,12 +55,17 @@ public class SummonManager implements Listener, SaveLoad {
 			String[] parts = line.split(" ");
 			String name = parts[0];
 			Location loc = new Location(Bukkit.getWorld(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
-			int dist = parts.length == 6 ? Integer.parseInt(parts[5]) : 20;
+			int dist = parts.length == 6 ? Integer.parseInt(parts[5]) : plugin.getConfig().getInt("summon_damage_radius");
+            int damage = parts.length == 7 ? Integer.parseInt(parts[6]) : plugin.getConfig().getInt("summon_damage_amt");
+            boolean canSpeak = parts.length != 8 || Boolean.parseBoolean(parts[7]);
+            boolean canDamage = parts.length != 9 || Boolean.parseBoolean(parts[8]);
+            boolean canBreak = parts.length != 10 || Boolean.parseBoolean(parts[9]);
+
 			
 			if (!pearls.isImprisoned(name))
 				continue;
 			
-			summons.put(name, new Summon(name, loc, dist));
+			summons.put(name, new Summon(name, loc, dist, damage, canSpeak, canDamage, canBreak));
 		}
 		
 		fis.close();
@@ -74,7 +79,7 @@ public class SummonManager implements Listener, SaveLoad {
 		for (Entry<String, Summon> entry : summons.entrySet()) {
 			Summon summon = entry.getValue();
 			Location loc = summon.getReturnLocation();
-			br.append(summon.getSummonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + summon.getAllowedDistance() + "\n");
+			br.append(summon.getSummonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + summon.getAllowedDistance() + summon.getDamageAmount() + summon.isCanSpeak() + summon.isCanDealDamage() + summon.isCanBreakBlocks() + "\n");
 		}
 		
 		br.flush();
@@ -102,11 +107,11 @@ public class SummonManager implements Listener, SaveLoad {
 			Location playerloc = player.getLocation();
 			
 			if (pploc.getWorld() != playerloc.getWorld() || pploc.distance(playerloc) > summon.getAllowedDistance())
-				player.damage(plugin.getConfig().getInt("summon_damage_amt"));
+				player.damage(summon.getDamageAmount());
 		}
 	}
 	
-	public boolean summonPearl(PrisonPearl pp, Location loc, int dist) {
+	public boolean summonPearl(PrisonPearl pp, Location loc) {
 		Player player = pp.getImprisonedPlayer();
 		if (player == null || player.isDead())
 			return false;
@@ -114,7 +119,7 @@ public class SummonManager implements Listener, SaveLoad {
 		if (summons.containsKey(player.getName()))
 			return false;
 		
-		Summon summon = new Summon(player.getName(), player.getLocation().add(0, -.5, 0), dist);
+		Summon summon = new Summon(player.getName(), player.getLocation().add(0, -.5, 0), plugin.getConfig().getInt("summon_damage_radius"), plugin.getConfig().getInt("summon_damage_amt"), true, true, true);
 		summons.put(summon.getSummonedName(), summon);
 		
 		if (!summonEvent(pp, SummonEvent.Type.SUMMONED, pp.getLocation())) {

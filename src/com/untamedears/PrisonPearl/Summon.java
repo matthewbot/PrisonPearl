@@ -8,12 +8,20 @@ public class Summon {
 	private String summonedname;
 	private Location returnloc;
 	private int alloweddistance;
-	
-	public Summon(String summonedname, Location returnloc, int alloweddistance) {
+    private int damageamount;
+    private boolean canSpeak;
+    private boolean canDealDamage;
+    private boolean canBreakBlocks;
+
+    public Summon(String summonedname, Location returnloc, int alloweddistance, int damageamount, boolean canSpeak, boolean canDealDamage, boolean canBreakBlocks) {
 		this.summonedname = summonedname;
 		this.returnloc = returnloc;
 		this.alloweddistance = alloweddistance;
-	}
+        this.damageamount = damageamount;
+        this.canSpeak = canSpeak;
+        this.canDealDamage = canDealDamage;
+        this.canBreakBlocks = canBreakBlocks;
+    }
 	
 	public String getSummonedName() {
 		return summonedname;
@@ -34,4 +42,36 @@ public class Summon {
 	public void setAllowedDistance(int alloweddistance) {
 		this.alloweddistance = alloweddistance;
 	}
+
+    public int getDamageAmount() {
+        return damageamount;
+    }
+
+    public void setDamageAmount(int damageamount) {
+        this.damageamount = damageamount;
+    }
+
+    public boolean isCanSpeak() {
+        return canSpeak;
+    }
+
+    public void setCanSpeak(boolean canSpeak) {
+        this.canSpeak = canSpeak;
+    }
+
+    public boolean isCanDealDamage() {
+        return canDealDamage;
+    }
+
+    public void setCanDealDamage(boolean canDealDamage) {
+        this.canDealDamage = canDealDamage;
+    }
+
+    public boolean isCanBreakBlocks() {
+        return canBreakBlocks;
+    }
+
+    public void setCanBreakBlocks(boolean canBreakBlocks) {
+        this.canBreakBlocks = canBreakBlocks;
+    }
 }

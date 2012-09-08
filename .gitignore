@@ -2,3 +2,4 @@ bukkit.jar
 PhysicalShop.jar
 craftbukkit.jar
 *.class
+.idea

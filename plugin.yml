@@ -76,6 +76,24 @@ commands:
       description: checkban the player
       usage: /ppcheck [player]
 
+   ppsetdist:
+      description: Sets distance prisoner can move.
+
+   ppsetdamage:
+      description: Sets damage prisoner receives.
+
+   pptogglespeech:
+      description: Toggles whether prisoner can talk in public chat.
+
+   pptoggledamage:
+      description: Toggles whether prisoner can damage players and mobs.
+
+   pptoggleblocks:
+      description: Toggles whether prisoner can break blocks.
+
+   ppsetmotd:
+      description: Sets prisoner's MOTD.
+
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands

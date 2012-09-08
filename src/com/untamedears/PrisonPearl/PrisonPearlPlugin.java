@@ -22,11 +22,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -137,7 +136,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			try {
 				obj.save(file);
 			} catch (IOException e2) {
-				throw new RuntimeException("Failed to create " + file.getAbsolutePath(), e2);
+                throw new RuntimeException("Failed to create " + file.getAbsolutePath(), e2);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to load prison pearls from " + file.getAbsolutePath(), e);
@@ -150,6 +149,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			File bakfile = new File(file.getAbsolutePath() + ".bak");
 			
 			obj.save(newfile);
+
+            if (bakfile.exists()) {
+                bakfile.delete();
+            }
+
 			if (file.exists() && !file.renameTo(bakfile))
 				throw new IOException("Failed to rename " + file.getAbsolutePath() + " to " + bakfile.getAbsolutePath());
 			if (!newfile.renameTo(file))
@@ -234,6 +238,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if player is imprisoned
 			for (String line : getConfig().getStringList("prison_motd")) // give him prison_motd
 				player.sendMessage(line);
+            player.sendMessage(pearls.getByImprisoned(player).getMotd());
 		}
 	}	
 	
@@ -300,7 +305,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			if (getConfig().getBoolean("prison_musthotbar") && firstpearl > 9) // bail if it must be in the hotbar
 				continue; 
 				
-			if (pearlman.imprisonPlayer(playerName, damager)) // otherwise, try to imprison
+			if (pearlman.imprisonPlayer(player, damager)) // otherwise, try to imprison
 				break;
 		}
 	}
@@ -492,6 +497,39 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			});
 		}
 	}
+
+@EventHandler(priority=EventPriority.NORMAL)
+    private boolean onPlayerChatEvent(AsyncPlayerChatEvent event) {
+        if (summonman.isSummoned(event.getPlayer()) && !summonman.getSummon(event.getPlayer()).isCanSpeak()) {
+           event.setCancelled(true);
+        }
+
+        return true;
+    }
+
+    @EventHandler(priority=EventPriority.NORMAL)
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+
+        if (!(event.getDamager() instanceof Player)) {
+            return;
+        }
+
+        Player player = (Player)event.getDamager();
+
+        if(summonman.isSummoned(player) && !summonman.getSummon(player).isCanDealDamage()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority=EventPriority.NORMAL)
+    public void onBlockBreakEvent(BlockBreakEvent event) {
+
+        Player player = event.getPlayer();
+
+        if(summonman.isSummoned(player) && !summonman.getSummon(player).isCanBreakBlocks()) {
+            event.setCancelled(true);
+        }
+    }
 	
 	public void loadAlts() {
 		if (altsList == null) {
@@ -523,7 +561,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		String name;
 		for (Iterator<String> names = banned.keySet().iterator(); names.hasNext();) {
 			name = names.next();
-			if (banned.get(name) == true) {
+			if (banned.get(name)) {
 				s.getOfflinePlayer(name).setBanned(false);
 				log.info("unbanning "+name);
 			}
@@ -571,7 +609,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		} else if (pearledCount == maxImprisonedAlts || (pearledCount > maxImprisonedAlts && !pearls.isImprisoned(name))) {
 			banAndKick(name,pearledCount,names);
 			return 2;
-		} else if (banned.containsKey(name) && banned.get(name) == true) {
+		} else if (banned.containsKey(name) && banned.get(name)) {
 			this.getServer().getOfflinePlayer(name).setBanned(false);
 			banned.put(name, false);
 			return 1;

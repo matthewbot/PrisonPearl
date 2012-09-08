@@ -64,12 +64,157 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return check(sender, args);
 		} else if (label.equalsIgnoreCase("kill")) {
 			return kill(sender);
-		}
+		} else if (label.equalsIgnoreCase("ppsetdist")) {
+            return setDistCmd(sender, args);
+        } else if (label.equalsIgnoreCase("ppsetdamage")) {
+            return setDamageCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptogglespeech")) {
+            return toggleSpeechCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptoggledamage")) {
+            return toggleDamageCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptoggleblocks")) {
+            return toggleBlocksCmd(sender, args);
+        } else if (label.equalsIgnoreCase("ppsetmotd")) {
+            return setMotdCmd(sender, args);
+        }
 
 		return false;
 	}
-	
-	private boolean locateCmd(CommandSender sender, String args[], boolean any) {
+
+    private PrisonPearl setCmd(CommandSender sender, String[] args) {
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return null;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null){
+            return null;
+        }
+
+        if (args.length > 1)
+            return null;
+
+        if (pp.getImprisonedPlayer().isDead()) {
+            sender.sendMessage(pp.getImprisonedName() + " is dead. Bring him back to try again.");
+            return null;
+        } else if (pp.getImprisonedPlayer() == player) {
+            sender.sendMessage("You cannot alter your own pearl!");
+            return null;
+        } else if (!(summonman.isSummoned(pp))) {
+            sender.sendMessage(pp.getImprisonedName() + " is not summoned.");
+            return null;
+        }
+
+        return pp;
+    }
+
+    private boolean setDistCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return true;
+        }
+
+        summonman.getSummon(pp.getImprisonedName()).setAllowedDistance(Integer.parseInt(args[0]));
+        sender.sendMessage(pp.getImprisonedName() + "'s allowed distance set to " + args[0]);
+        return true;
+    }
+
+    private boolean setDamageCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return true;
+        }
+
+        summonman.getSummon(pp.getImprisonedName()).setDamageAmount(Integer.parseInt(args[0]));
+        sender.sendMessage(pp.getImprisonedName() + "'s damage amount set to " + args[0]);
+        return true;
+    }
+
+    private boolean toggleSpeechCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return true;
+        }
+
+        boolean speak = summonman.getSummon(pp.getImprisonedName()).isCanSpeak();
+        summonman.getSummon(pp.getImprisonedName()).setCanSpeak(!speak);
+        sender.sendMessage(pp.getImprisonedName() + " ability to speak set to " + !speak);
+        return true;
+    }
+
+    private boolean toggleDamageCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return true;
+        }
+
+        boolean damage = summonman.getSummon(pp.getImprisonedName()).isCanDealDamage();
+        summonman.getSummon(pp.getImprisonedName()).setCanDealDamage(!damage);
+        sender.sendMessage(pp.getImprisonedName() + " ability to deal damage set to " + !damage);
+        return true;
+    }
+
+    private boolean toggleBlocksCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return true;
+        }
+
+        boolean block = summonman.getSummon(pp.getImprisonedName()).isCanBreakBlocks();
+        summonman.getSummon(pp.getImprisonedName()).setCanBreakBlocks(!block);
+        sender.sendMessage(pp.getImprisonedName() + " ability to break blocks set to " + !block);
+        return true;
+    }
+
+    private boolean setMotdCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return true;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null) {
+
+            return true;
+        }
+
+        String s = "";
+        for (int i = 0; i < args.length; i++) {
+            s += (" " + args[i]);
+        }
+        pp.setMotd(s);
+        sender.sendMessage(pp.getImprisonedName() + "'s Message of the Day set to " + s);
+        return true;
+    }
+
+    private boolean locateCmd(CommandSender sender, String args[], boolean any) {
 		String name_is;
 		String name_possesive;
 		PrisonPearl pp;
@@ -172,7 +317,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 	}
 	
 	private boolean summonCmd(CommandSender sender, String args[]) {
-		if (args.length > 2)
+		if (args.length > 1)
 			return false;
 		
 		if (!(sender instanceof Player)) {
@@ -180,23 +325,14 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 		Player player = (Player)sender;
-		
-		int dist = plugin.getConfig().getInt("summon_damage_radius");
+
 		PrisonPearl pp;
-		if (args.length == 2) {
+
+		if (args.length == 1) {
 			try {
-				dist = Integer.parseInt(args[1]);
 				pp = getCommandPearl(player, args, 0);
-			} catch (NumberFormatException e) { 
-				sender.sendMessage("Invalid summon radius '" + args[1] + "'");
-				return false;
-			}
-		} else if (args.length == 1) {
-			try {
-				dist = Integer.parseInt(args[0]);
-				pp = getCommandPearl(player, args, 1);
 			} catch (NumberFormatException e) {
-				pp = getCommandPearl(player, args, 0);
+				pp = getCommandPearl(player, args, 1);
 			}
 		} else {
 			pp = getCommandPearl(player, args, 0);
@@ -204,12 +340,6 @@ public class PrisonPearlCommands implements CommandExecutor {
 		
 		if (pp == null)
 			return true;
-		
-		if (args.length > 0) {
-			try {
-				dist = Integer.parseInt(args[args.length-1]);
-			} catch (NumberFormatException e) { }
-		}
 		
 		if (pp.getImprisonedPlayer() == null || pp.getImprisonedPlayer().isDead()) {
 			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
@@ -222,7 +352,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 			
-		if (summonman.summonPearl(pp, player.getLocation(), dist))
+		if (summonman.summonPearl(pp, player.getLocation()))
 			sender.sendMessage("You've summoned " + pp.getImprisonedName());
 		else
 			sender.sendMessage("You failed to summon " + pp.getImprisonedName());
