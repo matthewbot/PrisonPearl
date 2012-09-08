@@ -79,7 +79,7 @@ public class SummonManager implements Listener, SaveLoad {
 		for (Entry<String, Summon> entry : summons.entrySet()) {
 			Summon summon = entry.getValue();
 			Location loc = summon.getReturnLocation();
-			br.append(summon.getSummonedName()).append(" ").append(loc.getWorld().getName()).append(" ").append((char) loc.getBlockX()).append(" ").append((char) loc.getBlockY()).append(" ").append((char) loc.getBlockZ()).append(" ").append((char) summon.getAllowedDistance()).append((char) summon.getDamageAmount()).append(summon.isCanSpeak()).append(summon.isCanDealDamage()).append(summon.isCanBreakBlocks()).append("\n");
+			br.append(summon.getSummonedName()).append(" ").append(loc.getWorld().getName()).append(" ").append((char) loc.getBlockX()).append(" ").append((char) loc.getBlockY()).append(" ").append((char) loc.getBlockZ()).append(" ").append((char) summon.getAllowedDistance()).append((char) summon.getDamageAmount()).append(String.valueOf(summon.isCanSpeak())).append(String.valueOf(summon.isCanDealDamage())).append(String.valueOf(summon.isCanBreakBlocks())).append("\n");
 		}
 		
 		br.flush();
@@ -202,7 +202,8 @@ public class SummonManager implements Listener, SaveLoad {
 		}
 	}
 	
-	private boolean summonEvent(PrisonPearl pp, @SuppressWarnings("SameParameterValue") SummonEvent.Type type) {
+	@SuppressWarnings({"UnusedReturnValue", "SameParameterValue"})
+    private boolean summonEvent(PrisonPearl pp, @SuppressWarnings("SameParameterValue") SummonEvent.Type type) {
 		SummonEvent event = new SummonEvent(pp, type);
 		Bukkit.getPluginManager().callEvent(event);
 		return !event.isCancelled();

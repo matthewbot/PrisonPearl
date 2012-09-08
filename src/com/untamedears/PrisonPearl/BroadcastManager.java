@@ -50,7 +50,8 @@ class BroadcastManager {
         return receivers != null && receivers.remove(receiver) != null;
     }
 	
-	public boolean removeBroadcasts(Player player) {
+	@SuppressWarnings("UnusedDeclaration")
+    public boolean removeBroadcasts(Player player) {
 		return broadcasts.remove(player) != null;
 	}
 	
@@ -76,7 +77,8 @@ class BroadcastManager {
 		}
 	}
 	
-	@EventHandler(priority=EventPriority.MONITOR)
+	@SuppressWarnings("UnusedDeclaration")
+    @EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		broadcasts.remove(event.getPlayer());
 		quickconfirm.remove(event.getPlayer());

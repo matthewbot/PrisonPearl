@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import com.trc202.CombatTag.CombatTag;
 import com.trc202.CombatTagApi.CombatTagApi;
 
+@SuppressWarnings("ALL")
 class CombatTagManager {
 	private CombatTagApi combatTagApi;
 	private boolean combatTagEnabled = false;

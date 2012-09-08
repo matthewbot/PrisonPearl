@@ -652,7 +652,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
                 }
                 banned.put(name, true);
                 log.info("banning " + name + ", for having " + pearledCount + " imprisoned alts: " + iNames);
-            } else if (banned.containsKey(name) && banned.get(name).equals(new Boolean(true))) {
+            } else if (banned.containsKey(name) && banned.get(name).equals(Boolean.TRUE)) {
                 this.getServer().getOfflinePlayer(name).setBanned(false);
                 banned.put(name, false);
                 log.info("unbanning " + name + ", no longer has too many imprisoned alts.");

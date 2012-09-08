@@ -35,6 +35,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
+@SuppressWarnings("ALL")
 class PrisonPearlManager implements Listener {
 	private final PrisonPearlPlugin plugin;
 	private final PrisonPearlStorage pearls;
