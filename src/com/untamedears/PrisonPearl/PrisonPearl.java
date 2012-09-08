@@ -17,6 +17,7 @@ import org.bukkit.util.Vector;
 public class PrisonPearl {
 	private short id;
 	private String imprisonedname;
+    private String motd = "";
 	private Player player;
 	private Item item;
 	private Location blocklocation;
@@ -172,4 +173,12 @@ public class PrisonPearl {
 		this.item = item;
 		blocklocation = null;
 	}
+
+    public String getMotd() {
+        return motd;
+    }
+
+    public void setMotd(String motd) {
+        this.motd = motd;
+    }
 }
