@@ -79,7 +79,7 @@ public class SummonManager implements Listener, SaveLoad {
 		for (Entry<String, Summon> entry : summons.entrySet()) {
 			Summon summon = entry.getValue();
 			Location loc = summon.getReturnLocation();
-			br.append(summon.getSummonedName()).append(" ").append(loc.getWorld().getName()).append(" ").append((char) loc.getBlockX()).append(" ").append((char) loc.getBlockY()).append(" ").append((char) loc.getBlockZ()).append(" ").append((char) summon.getAllowedDistance()).append((char) summon.getDamageAmount()).append(String.valueOf(summon.isCanSpeak())).append(String.valueOf(summon.isCanDealDamage())).append(String.valueOf(summon.isCanBreakBlocks())).append("\n");
+			br.append(summon.getSummonedName()).append(" ").append(loc.getWorld().getName()).append(" ").append(String.valueOf(loc.getBlockX())).append(" ").append(String.valueOf(loc.getBlockY())).append(" ").append(String.valueOf(loc.getBlockZ())).append(" ").append(String.valueOf(summon.getAllowedDistance())).append(" ").append(String.valueOf(summon.getDamageAmount())).append(" ").append(String.valueOf(summon.isCanSpeak())).append(" ").append(String.valueOf(summon.isCanDealDamage())).append(" ").append(String.valueOf(summon.isCanBreakBlocks())).append("\n");
 		}
 		
 		br.flush();

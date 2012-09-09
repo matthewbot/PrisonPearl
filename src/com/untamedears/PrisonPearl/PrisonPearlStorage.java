@@ -52,13 +52,14 @@ public class PrisonPearlStorage implements SaveLoad {
 			short id = Short.parseShort(parts[0]);
 			String imprisoned = parts[1];
 			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
+            PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
             if (parts.length != 6) {
                 String motd = "";
-                for (int i = 6; i <= parts.length; i++) {
+                for (int i = 6; i < parts.length; i++) {
                     motd = motd.concat(parts[i]);
                 }
+                pp.setMotd(motd);
             }
-			PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
 			if (pp == null) {
 				System.err.println("PrisonPearl for " + imprisoned + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
 				continue;
@@ -83,17 +84,17 @@ public class PrisonPearlStorage implements SaveLoad {
 				continue;
 			
 			Location loc = pp.getLocation();
-            br.append((char) pp.getID());
+            br.append(String.valueOf(pp.getID()));
             br.append(" ");
             br.append(pp.getImprisonedName());
             br.append(" ");
             br.append(loc.getWorld().getName());
             br.append(" ");
-            br.append((char) loc.getBlockX());
+            br.append(String.valueOf(loc.getBlockX()));
             br.append(" ");
-            br.append((char) loc.getBlockY());
+            br.append(String.valueOf(loc.getBlockY()));
             br.append(" ");
-            br.append((char) loc.getBlockZ());
+            br.append(String.valueOf(loc.getBlockZ()));
             br.append(" ");
             br.append(pp.getMotd());
             br.append("\n");
