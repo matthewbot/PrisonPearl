@@ -52,6 +52,12 @@ public class PrisonPearlStorage implements SaveLoad {
 			short id = Short.parseShort(parts[0]);
 			String imprisoned = parts[1];
 			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
+            if (parts.length != 6) {
+                String motd = "";
+                for (int i = 6; i <= parts.length; i++) {
+                    motd.concat(parts[i]);
+                }
+            }
 			PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
 			if (pp == null) {
 				System.err.println("PrisonPearl for " + imprisoned + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
@@ -88,6 +94,8 @@ public class PrisonPearlStorage implements SaveLoad {
             br.append((char) loc.getBlockY());
             br.append(" ");
             br.append((char) loc.getBlockZ());
+            br.append(" ");
+            br.append(pp.getMotd());
             br.append("\n");
         }
 		
