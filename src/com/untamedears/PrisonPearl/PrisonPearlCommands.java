@@ -208,7 +208,7 @@ class PrisonPearlCommands implements CommandExecutor {
 
         String s = "";
         for (String arg : args) {
-            s += (" " + arg);
+            s = s.concat(arg);
         }
         pp.setMotd(s);
         sender.sendMessage(pp.getImprisonedName() + "'s Message of the Day set to " + s);
