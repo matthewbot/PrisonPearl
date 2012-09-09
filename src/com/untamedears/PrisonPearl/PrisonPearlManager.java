@@ -50,6 +50,16 @@ public class PrisonPearlManager implements Listener {
 		return imprisonPlayer(imprisoned.getName(), imprisoner);
 	}
 	
+	/**
+	 * @param imprisonedname
+	 * @param imprisoner
+	 * @return
+	 */
+	/**
+	 * @param imprisonedname
+	 * @param imprisoner
+	 * @return
+	 */
 	public boolean imprisonPlayer(String imprisonedname, Player imprisoner) {
 		World respawnworld = Bukkit.getWorld(getConfig().getString("free_world"));
 		
@@ -88,6 +98,8 @@ public class PrisonPearlManager implements Listener {
 				stack.setAmount(stack.getAmount()-1); // and reduce his stack of pearls by one
 				inv.setItem(stacknum, stack);
 			} else { // no empty slot?
+				ItemStack newStack = new ItemStack(Material.ENDER_PEARL, stack.getAmount()-1);
+				imprisoner.getWorld().dropItem(imprisoner.getLocation(), newStack);
 				pearlnum = stacknum; // then overwrite his stack of pearls
 			}
 		}
