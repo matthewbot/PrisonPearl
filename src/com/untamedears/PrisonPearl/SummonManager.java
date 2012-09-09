@@ -55,11 +55,12 @@ public class SummonManager implements Listener, SaveLoad {
 			String[] parts = line.split(" ");
 			String name = parts[0];
 			Location loc = new Location(Bukkit.getWorld(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
-			int dist = parts.length == 6 ? Integer.parseInt(parts[5]) : plugin.getConfig().getInt("summon_damage_radius");
-            int damage = parts.length == 7 ? Integer.parseInt(parts[6]) : plugin.getConfig().getInt("summon_damage_amt");
-            boolean canSpeak = parts.length != 8 || Boolean.parseBoolean(parts[7]);
-            boolean canDamage = parts.length != 9 || Boolean.parseBoolean(parts[8]);
-            boolean canBreak = parts.length != 10 || Boolean.parseBoolean(parts[9]);
+			int dist = parts.length >= 6 ? Integer.parseInt(parts[5]) : plugin.getConfig().getInt("summon_damage_radius");
+            int damage = parts.length >= 7 ? Integer.parseInt(parts[6]) : plugin.getConfig().getInt("summon_damage_amt");
+            boolean canSpeak = parts.length >= 8 ? Boolean.parseBoolean(parts[7]) : true;
+            boolean canDamage = parts.length >= 9 ? Boolean.parseBoolean(parts[8]) : true;
+            boolean canBreak = parts.length == 10 ? Boolean.parseBoolean(parts[9]) : true;
+            System.out.println(name + " " + loc + " " + dist + " " + damage + " " + canSpeak + " " + canDamage + " " + canBreak);
 
 			
 			if (!pearls.isImprisoned(name))

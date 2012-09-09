@@ -56,7 +56,7 @@ public class PrisonPearlStorage implements SaveLoad {
             if (parts.length != 6) {
                 String motd = "";
                 for (int i = 6; i < parts.length; i++) {
-                    motd = motd.concat(parts[i]);
+                    motd = motd.concat(parts[i] + " ");
                 }
                 pp.setMotd(motd);
             }
