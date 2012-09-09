@@ -10,9 +10,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-public class BroadcastManager {
-	private Map<Player, Map<Player, Boolean>> broadcasts;
-	private Map<Player, Player> quickconfirm;
+class BroadcastManager {
+	private final Map<Player, Map<Player, Boolean>> broadcasts;
+	private final Map<Player, Player> quickconfirm;
 	
 	public BroadcastManager() {
 		broadcasts = new HashMap<Player, Map<Player, Boolean>>();
@@ -47,12 +47,11 @@ public class BroadcastManager {
 	
 	public boolean silenceBroadcast(Player player, Player receiver) {
 		Map<Player, Boolean> receivers = broadcasts.get(player);
-		if (receivers == null)
-			return false;
-		return receivers.remove(receiver) != null;
-	}
+        return receivers != null && receivers.remove(receiver) != null;
+    }
 	
-	public boolean removeBroadcasts(Player player) {
+	@SuppressWarnings("UnusedDeclaration")
+    public boolean removeBroadcasts(Player player) {
 		return broadcasts.remove(player) != null;
 	}
 	
@@ -78,7 +77,8 @@ public class BroadcastManager {
 		}
 	}
 	
-	@EventHandler(priority=EventPriority.MONITOR)
+	@SuppressWarnings("UnusedDeclaration")
+    @EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		broadcasts.remove(event.getPlayer());
 		quickconfirm.remove(event.getPlayer());

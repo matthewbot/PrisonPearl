@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.bukkit.Bukkit;
 
-public class AltsList {
+class AltsList {
 	private HashMap<String, String[]> altsHash;
 	private boolean initialised = false;
 	
@@ -38,12 +38,10 @@ public class AltsList {
 			if (line.length() > 1) {
 				String parts[] = line.split(" ");
 				String[] newString = new String[parts.length];
-				for (int i = 0; i < parts.length; i++) {
-					newString[i] = parts[i];
-				}
-				for (int j = 0; j < parts.length; j++) {
-					altsHash.put(parts[j], newString);
-				}
+                System.arraycopy(parts, 0, newString, 0, parts.length);
+                for (String part : parts) {
+                    altsHash.put(part, newString);
+                }
 			}
 		}
 	}

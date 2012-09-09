@@ -11,9 +11,9 @@ import java.util.Map.Entry;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-public class DamageLog {
-	private String player;
-	private Map<String, Integer> damagers;
+class DamageLog {
+	private final String player;
+	private final Map<String, Integer> damagers;
 	
 	private long expirestick;
 	
@@ -34,7 +34,8 @@ public class DamageLog {
 		return getDamage(player.getName());
 	}
 	
-	public int getDamage(String name) {
+	@SuppressWarnings("WeakerAccess")
+    public int getDamage(String name) {
 		Integer i = damagers.get(name);
 		if (i == null)
 			return 0;

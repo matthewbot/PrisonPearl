@@ -15,8 +15,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 public class PrisonPearl {
-	private short id;
-	private String imprisonedname;
+	private final short id;
+	private final String imprisonedname;
     private String motd = "";
 	private Player player;
 	private Item item;
@@ -28,7 +28,8 @@ public class PrisonPearl {
 		this.player = holderplayer;
 	}
 	
-	public PrisonPearl(short id, String imprisonedname, Location blocklocation) {
+	@SuppressWarnings("WeakerAccess")
+    public PrisonPearl(short id, String imprisonedname, Location blocklocation) {
 		this.id = id;
 		this.imprisonedname = imprisonedname;
 		this.blocklocation = blocklocation;
@@ -71,7 +72,8 @@ public class PrisonPearl {
 		return item;
 	}
 	
-	public String getHolderName() {
+	@SuppressWarnings("WeakerAccess")
+    public String getHolderName() {
 		if (player != null) {
 			return player.getName();
 		} else if (item != null) {
@@ -116,7 +118,8 @@ public class PrisonPearl {
 		return "held by " + getHolderName() + " at " + str;
 	}
 	
-	public boolean verifyLocation() {
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean verifyLocation() {
 		if (item != null) {
 			Chunk chunk = item.getLocation().getChunk();
 			for (Entity entity : chunk.getEntities()) {

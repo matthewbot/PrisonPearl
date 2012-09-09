@@ -9,12 +9,12 @@ import org.bukkit.entity.Player;
 import com.trc202.CombatTag.CombatTag;
 import com.trc202.CombatTagApi.CombatTagApi;
 
-public class CombatTagManager {
+@SuppressWarnings("ALL")
+class CombatTagManager {
 	private CombatTagApi combatTagApi;
 	private boolean combatTagEnabled = false;
 
 	public CombatTagManager(Server server, Logger l) {
-        Logger log = l;
 		if(server.getPluginManager().getPlugin("CombatTag") != null) {
 			combatTagApi = new CombatTagApi((CombatTag)server.getPluginManager().getPlugin("CombatTag"));
 			combatTagEnabled = true;
@@ -22,18 +22,12 @@ public class CombatTagManager {
 	}
 	
 	public boolean isCombatTagNPC(Entity player) {
-		if (combatTagEnabled && combatTagApi != null) {
-			return combatTagApi.isNPC(player);
-		}
-		return false;
-	}
+        return combatTagEnabled && combatTagApi != null && combatTagApi.isNPC(player);
+    }
 	
 	public boolean isCombatTaged(Player player) {
-		if (combatTagEnabled && combatTagApi != null) {
-			return combatTagApi.isInCombat(player);
-		}
-		return false;
-	}
+        return combatTagEnabled && combatTagApi != null && combatTagApi.isInCombat(player);
+    }
 	
 	public String getNPCPlayerName(Entity player) {
 		if (combatTagEnabled && combatTagApi != null) {
