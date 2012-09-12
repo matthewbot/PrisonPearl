@@ -273,7 +273,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		Player player = (Player)event.getEntity();
 		String playerName = player.getName();
 		
-		log.info("name: "+player.getName());
 		if (combatTagManager.isCombatTagNPC(event.getEntity()))  {
 			String npcName = player.getName();
 			String realName = combatTagManager.getNPCPlayerName(player);
