@@ -20,8 +20,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public class PrisonPearlStorage implements SaveLoad {
-	private Map<Short, PrisonPearl> pearls_byid;
-	private Map<String, PrisonPearl> pearls_byimprisoned;
+	private final Map<Short, PrisonPearl> pearls_byid;
+	private final Map<String, PrisonPearl> pearls_byimprisoned;
 	private short nextid;
 	
 	private boolean dirty;
@@ -52,7 +52,14 @@ public class PrisonPearlStorage implements SaveLoad {
 			short id = Short.parseShort(parts[0]);
 			String imprisoned = parts[1];
 			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
-			PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
+            PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
+            if (parts.length != 6) {
+                String motd = "";
+                for (int i = 6; i < parts.length; i++) {
+                    motd = motd.concat(parts[i] + " ");
+                }
+                pp.setMotd(motd);
+            }
 			if (pp == null) {
 				System.err.println("PrisonPearl for " + imprisoned + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
 				continue;
@@ -77,8 +84,21 @@ public class PrisonPearlStorage implements SaveLoad {
 				continue;
 			
 			Location loc = pp.getLocation();
-			br.append(pp.getID() + " " + pp.getImprisonedName() + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + "\n");
-		}
+            br.append(String.valueOf(pp.getID()));
+            br.append(" ");
+            br.append(pp.getImprisonedName());
+            br.append(" ");
+            br.append(loc.getWorld().getName());
+            br.append(" ");
+            br.append(String.valueOf(loc.getBlockX()));
+            br.append(" ");
+            br.append(String.valueOf(loc.getBlockY()));
+            br.append(" ");
+            br.append(String.valueOf(loc.getBlockZ()));
+            br.append(" ");
+            br.append(pp.getMotd());
+            br.append("\n");
+        }
 		
 		br.flush();
 		fos.close();
@@ -141,21 +161,21 @@ public class PrisonPearlStorage implements SaveLoad {
 	
 	public Integer getImprisonedCount(String[] names) {
 		Integer count = 0;
-		for (int i = 0; i < names.length; i++) {
-			if (pearls_byimprisoned.containsKey(names[i])) {
-				count++;
-			}
-		}
+        for (String name : names) {
+            if (pearls_byimprisoned.containsKey(name)) {
+                count++;
+            }
+        }
 		return count;
 	}
 	
 	public String[] getImprisonedNames(String[] names) {
 		List<String> iNames = new ArrayList<String>();
-		for (int i = 0; i < names.length; i++) {
-			if (pearls_byimprisoned.containsKey(names[i])) {
-				iNames.add(names[i]);
-			}
-		}
+        for (String name : names) {
+            if (pearls_byimprisoned.containsKey(name)) {
+                iNames.add(name);
+            }
+        }
 		int count = iNames.size();
 		String[] results = new String[count];
 		for (int i = 0; i < count; i++) {

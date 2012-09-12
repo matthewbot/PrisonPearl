@@ -5,8 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 public class Summon {
-	private String summonedname;
-	private Location returnloc;
+	private final String summonedname;
+	private final Location returnloc;
 	private int alloweddistance;
     private int damageamount;
     private boolean canSpeak;
