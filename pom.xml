@@ -43,6 +43,13 @@
 			<scope>system</scope>
             <systemPath>${basedir}/lib/PhysicalShop.jar</systemPath>
         </dependency>
+		<dependency>
+            <groupId>com.trc202.CombatTag</groupId>
+			<artifactId>CombatTag</artifactId>
+            <version>5.0.1-SNAPSHOT</version>
+			<scope>system</scope>
+            <systemPath>${basedir}/lib/CombatTag.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <repositories>
