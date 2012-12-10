@@ -21,10 +21,10 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 public class PrisonPortaledPlayerManager implements Listener, SaveLoad {
-	private PrisonPearlPlugin plugin;
-	private PrisonPearlStorage pearls;
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
 	
-	private Set<String> portaled_players;
+	private final Set<String> portaled_players;
 	private boolean dirty;
 	
 	public PrisonPortaledPlayerManager(PrisonPearlPlugin plugin, PrisonPearlStorage pearls) {
@@ -58,7 +58,7 @@ public class PrisonPortaledPlayerManager implements Listener, SaveLoad {
 		BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fos));
 		
 		for (String name : portaled_players) {
-			br.append(name + "\n");
+			br.append(name).append("\n");
 		}
 		
 		br.flush();
@@ -66,11 +66,13 @@ public class PrisonPortaledPlayerManager implements Listener, SaveLoad {
 		dirty = false;
 	}
 	
-	public boolean isPlayerPortaledToPrison(Player player) {
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean isPlayerPortaledToPrison(Player player) {
 		return isPlayerPortaledToPrison(player.getName());
 	}
 	
-	public boolean isPlayerPortaledToPrison(String playername) {
+	@SuppressWarnings("WeakerAccess")
+    public boolean isPlayerPortaledToPrison(String playername) {
 		return portaled_players.contains(playername);
 	}
 	

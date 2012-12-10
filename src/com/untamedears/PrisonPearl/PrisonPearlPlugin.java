@@ -5,25 +5,27 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,12 +37,28 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private SummonManager summonman;
 	private PrisonPortaledPlayerManager portalman;
 	private BroadcastManager broadcastman;
+	private AltsList altsList;
+	private static Logger log;
+	private static final Integer maxImprisonedAlts = 2;
+	//private static long loginDelay = 10*60*1000;
+	private static final String kickMessage = "You have too many imprisoned alts! If you think this is an error, please message the mods on /r/civcraft";
+	//private static String delayMessage = "You cannot switch alt accounts that quickly, please wait ";
+	private HashMap<String, Long> lastLoggout;
+	private HashMap<String, Boolean> banned;
+	
+	private CombatTagManager combatTagManager;
 	
 	private Map<String, PermissionAttachment> attachments;
 	
 	public void onEnable() {
 		getConfig().options().copyDefaults(true);
 		saveConfig();
+		
+		log = this.getLogger();
+		
+		//lastLoggout = new HashMap<String, Long>();
+		//wasKicked = new HashMap<String, Boolean>();
+		banned = new HashMap<String, Boolean>();
 		
 		pearls = new PrisonPearlStorage();
 		load(pearls, getPrisonPearlsFile());
@@ -52,6 +70,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		portalman = new PrisonPortaledPlayerManager(this, pearls);
 		load(portalman, getPortaledPlayersFile());
 		broadcastman = new BroadcastManager();
+		combatTagManager = new CombatTagManager(this.getServer(), log);
+
+		loadAlts();
+		checkBanAllAlts();
+		
 		if (Bukkit.getPluginManager().isPluginEnabled("PhysicalShop"))
 			new PhysicalShopListener(this, pearls);
 		
@@ -89,6 +112,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 
 	public void onDisable() {
 		saveAll(true);
+		unBanAll();
 		
 		for (PermissionAttachment attachment : attachments.values())
 			attachment.remove();
@@ -112,7 +136,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			try {
 				obj.save(file);
 			} catch (IOException e2) {
-				throw new RuntimeException("Failed to create " + file.getAbsolutePath(), e2);
+                throw new RuntimeException("Failed to create " + file.getAbsolutePath(), e2);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to load prison pearls from " + file.getAbsolutePath(), e);
@@ -125,6 +149,12 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			File bakfile = new File(file.getAbsolutePath() + ".bak");
 			
 			obj.save(newfile);
+
+            if (bakfile.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                bakfile.delete();
+            }
+
 			if (file.exists() && !file.renameTo(bakfile))
 				throw new IOException("Failed to rename " + file.getAbsolutePath() + " to " + bakfile.getAbsolutePath());
 			if (!newfile.renameTo(file))
@@ -146,12 +176,19 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		return new File(getDataFolder(), "portaledplayers.txt");
 	}
 	
+	
+	private File getAltsListFile() {
+		return new File(getDataFolder(), "alts.txt");
+	}
+	
+	
 	// Free player if he was free'd while offline
 	// otherwise, correct his spawn location if necessary
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
 		updateAttachment(player);
+		checkBan(player.getName());
 		
 		if (player.isDead())
 			return;
@@ -180,7 +217,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		}
 	}
 	
-	// remove permission attachments
+	// remove permission attachments and record the time players log out
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		PermissionAttachment attachment = attachments.remove(event.getPlayer().getName());
@@ -202,10 +239,11 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		if (pearls.isImprisoned(player) && !summonman.isSummoned(player)) { // if player is imprisoned
 			for (String line : getConfig().getStringList("prison_motd")) // give him prison_motd
 				player.sendMessage(line);
+            player.sendMessage(pearls.getByImprisoned(player).getMotd());
 		}
 	}	
 	
-	private static Location RESPAWN_PLAYER = new Location(null, 0, 0, 0);
+	private static final Location RESPAWN_PLAYER = new Location(null, 0, 0, 0);
 	
 	// gets where the player should be respawned at
 	// returns null if the curloc is an acceptable respawn location
@@ -234,11 +272,26 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			return;
 		
 		Player player = (Player)event.getEntity();
+		String playerName = player.getName();
 		
-		PrisonPearl pp = pearls.getByImprisoned(player); // find out if the player is imprisoned
+		if (combatTagManager.isCombatTagNPC(event.getEntity()))  {
+			String npcName = player.getName();
+			String realName = combatTagManager.getNPCPlayerName(player);
+			log.info("NPC: "+npcName+", Player: "+playerName);
+			if (!realName.equals("")) {
+				playerName = realName;
+			}
+		}
+		
+		PrisonPearl pp = pearls.getByImprisoned(playerName); // find out if the player is imprisoned
 		if (pp != null) { // if imprisoned
-			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) // bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
+			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) {// bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
+				// reveal location of pearl to damaging players if pearl stealing is disabled
+				for (Player damager : damageman.getDamagers(player)) {
+					damager.sendMessage(ChatColor.GREEN+"[PrisonPearl] "+pp.getImprisonedName()+" cannot be pearled here because they are already "+pp.describeLocation());
+				}
 				return;
+			}
 		}
 		
 		for (Player damager : damageman.getDamagers(player)) { // check to see if anyone can imprison him
@@ -280,6 +333,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			Player imprisoner = event.getImprisoner();
 			imprisoner.sendMessage(ChatColor.GREEN+"You've bound " + player.getDisplayName() + ChatColor.GREEN+" to a prison pearl!");
 			player.sendMessage(ChatColor.RED+"You've been bound to a prison pearl owned by " + imprisoner.getDisplayName());
+
+			String[] alts = altsList.getAltsArray(player.getName());
+			checkBans(alts);
+			
 		} else if (event.getType() == PrisonPearlEvent.Type.DROPPED || event.getType() == PrisonPearlEvent.Type.HELD) {
 			String loc = pp.describeLocation();
 			player.sendMessage(ChatColor.GREEN + "Your prison pearl is " + loc);
@@ -300,6 +357,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 					player.teleport(loc); // otherwise teleport
 				}
 			}
+			String[] alts = altsList.getAltsArray(player.getName());
+			checkBans(alts);
 			
 			player.sendMessage("You've been freed!");
 			broadcastman.broadcast(player, player.getDisplayName() + " was freed!");
@@ -334,7 +393,6 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 			break;
 		}
 	}
-
 	
 	private void updateAttachment(Player player) {
 		PermissionAttachment attachment = attachments.get(player.getName());
@@ -398,7 +456,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		return null;
 	}
 	
-	private boolean isObstructed(Location loc) {
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean isObstructed(Location loc) {
 		Location ground = new Location(loc.getWorld(), loc.getX(), 100, loc.getZ());
 		while (ground.getBlockY() >= 1) {
 			if (!ground.getBlock().isEmpty())
@@ -442,5 +501,196 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 				}
 			});
 		}
+	}
+
+@SuppressWarnings("SameReturnValue")
+@EventHandler(priority=EventPriority.NORMAL)
+    private boolean onPlayerChatEvent(AsyncPlayerChatEvent event) {
+        if (summonman.isSummoned(event.getPlayer()) && !summonman.getSummon(event.getPlayer()).isCanSpeak()) {
+           event.setCancelled(true);
+        }
+
+        return true;
+    }
+
+    @EventHandler(priority=EventPriority.NORMAL)
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+
+        if (!(event.getDamager() instanceof Player)) {
+            return;
+        }
+
+        Player player = (Player)event.getDamager();
+
+        if(summonman.isSummoned(player) && !summonman.getSummon(player).isCanDealDamage()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority=EventPriority.NORMAL)
+    public void onBlockBreakEvent(BlockBreakEvent event) {
+
+        Player player = event.getPlayer();
+
+        if(summonman.isSummoned(player) && !summonman.getSummon(player).isCanBreakBlocks()) {
+            event.setCancelled(true);
+        }
+    }
+    
+    public boolean isCombatTagged(String playerName) {
+    	if (combatTagManager != null) {
+    		return combatTagManager.isCombatTagged(playerName);
+    	}
+    	return false;
+    }
+	
+	public void loadAlts() {
+		if (altsList == null) {
+			altsList = new AltsList();
+		}
+		altsList.load(getAltsListFile());
+	}
+	
+	public void checkBanAllAlts() {
+		if (altsList != null) {
+			Integer bannedCount = 0, unbannedCount = 0, total = 0, result;
+            for (String name : altsList.getAllNames()) {
+                //log.info("checking "+name);
+                result = checkBan(name);
+                total++;
+                if (result == 2) {
+                    bannedCount++;
+                } else if (result == 1) {
+                    unbannedCount++;
+                }
+            }
+			log.info("checked "+total+" accounts, banned "+bannedCount+" accounts, unbanned "+unbannedCount+" accounts");
+		}
+	}
+	
+	void unBanAll() {
+		Server s = this.getServer();
+		String name;
+        for (String s1 : banned.keySet()) {
+            name = s1;
+            if (banned.get(name)) {
+                s.getOfflinePlayer(name).setBanned(false);
+                log.info("unbanning " + name);
+            }
+        }
+	}
+	
+	//gets the most recent time an alt account has logged out (returns 0 if there are none recorded)
+	private Long getMostRecentAltLogout(String[] alts) {
+		Long time = (long) 0;
+		Long temp;
+        for (String alt : alts) {
+            if (lastLoggout.containsKey(alt)) {
+                temp = lastLoggout.get(alt);
+                if (temp > time) {
+                    time = temp;
+                }
+            }
+        }
+		return time;
+	}
+	
+	private int checkBan(String name) {
+		//log.info("checking "+name);
+		String[] alts = altsList.getAltsArray(name);
+		Integer pearledCount = pearls.getImprisonedCount(alts);
+		String[] imprisonedNames = pearls.getImprisonedNames(alts);
+		String names = "";
+		for (int i = 0; i < imprisonedNames.length; i++) {
+			names = names + imprisonedNames[i];
+			if (i < imprisonedNames.length-1) {
+				names = names + ", ";
+			}
+		}
+		if (pearledCount > maxImprisonedAlts && pearls.isImprisoned(name)) {
+			int count = 0;
+            for (String imprisonedName : imprisonedNames) {
+                if (imprisonedName.compareTo(name) < 0) {
+                    count++;
+                }
+                if (count >= maxImprisonedAlts) {
+                    banAndKick(name, pearledCount, names);
+                    return 2;
+                }
+            }
+		} else if (pearledCount.equals(maxImprisonedAlts) || (pearledCount > maxImprisonedAlts && !pearls.isImprisoned(name))) {
+			banAndKick(name,pearledCount,names);
+			return 2;
+		} else if (banned.containsKey(name) && banned.get(name)) {
+			this.getServer().getOfflinePlayer(name).setBanned(false);
+			banned.put(name, false);
+			return 1;
+		}
+		return 0;
+	}
+	
+	private void banAndKick(String name, int pearledCount, String names) {
+		this.getServer().getOfflinePlayer(name).setBanned(true);
+		Player p = this.getServer().getPlayer(name);
+		if (p != null) {
+			p.kickPlayer(kickMessage);
+		}
+		banned.put(name, true);
+		log.info("banning "+name+" for having "+pearledCount+" imprisoned alts: "+names);
+	}
+	
+	private void checkBans(String[] names) {
+		Integer pearledCount;
+		String[] imprisonedNames;
+		String[] alts;
+        for (String name : names) {
+            log.info("checking " + name);
+            alts = altsList.getAltsArray(name);
+            imprisonedNames = pearls.getImprisonedNames(alts);
+            String iNames = "";
+            for (int j = 0; j < imprisonedNames.length; j++) {
+                iNames = iNames + imprisonedNames[j];
+                if (j < imprisonedNames.length - 1) {
+                    iNames = iNames + ", ";
+                }
+            }
+            pearledCount = pearls.getImprisonedCount(alts);
+            if (pearledCount >= maxImprisonedAlts) {
+                this.getServer().getOfflinePlayer(name).setBanned(true);
+                Player p = this.getServer().getPlayer(name);
+                if (p != null) {
+                    p.kickPlayer(kickMessage);
+                }
+                banned.put(name, true);
+                log.info("banning " + name + ", for having " + pearledCount + " imprisoned alts: " + iNames);
+            } else if (banned.containsKey(name) && banned.get(name).equals(Boolean.TRUE)) {
+                this.getServer().getOfflinePlayer(name).setBanned(false);
+                banned.put(name, false);
+                log.info("unbanning " + name + ", no longer has too many imprisoned alts.");
+            }
+        }
+	}
+	
+	public boolean isTempBanned(String name) {
+		if (banned.containsKey(name)) {
+			return banned.get(name);
+		}
+		return false;
+	}
+	
+	public int getImprisonedCount(String name) {
+		return pearls.getImprisonedCount(altsList.getAltsArray(name));
+	}
+	
+	public String getImprisonedAltsString(String name) {
+		String result = "";
+		String[] alts = pearls.getImprisonedNames(altsList.getAltsArray(name));
+		for (int i = 0; i < alts.length; i++) {
+			result = result + "alts[i]";
+			if (i < alts.length - 1) {
+				result = result + ", ";
+			}
+		}
+		return result;
 	}
 }

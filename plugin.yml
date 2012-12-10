@@ -1,7 +1,7 @@
 name: PrisonPearl
 main: com.untamedears.PrisonPearl.PrisonPearlPlugin
-version: 1.3
-soft-depend: [PhysicalShop]
+version: 1.5.1
+soft-depend: [PhysicalShop, CombatTag]
 
 commands:
    pplocate:
@@ -66,7 +66,34 @@ commands:
       description: Get information about player in a pearl
       usage: /ppinfo [player]
       alias: ppi
-      
+   pploadalts:
+      description: reload alt lists from file
+      usage: /pploadalts
+   ppcheckall:
+      description: checkban all accounts
+      usage: /ppcheckall
+   ppcheck:
+      description: checkban the player
+      usage: /ppcheck [player]
+
+   ppsetdist:
+      description: Sets distance prisoner can move.
+
+   ppsetdamage:
+      description: Sets damage prisoner receives.
+
+   pptogglespeech:
+      description: Toggles whether prisoner can talk in public chat.
+
+   pptoggledamage:
+      description: Toggles whether prisoner can damage players and mobs.
+
+   pptoggleblocks:
+      description: Toggles whether prisoner can break blocks.
+
+   ppsetmotd:
+      description: Sets prisoner's MOTD.
+
 permissions:
    prisonpearl.*:
       description: Gives full access to PrisonPearl commands

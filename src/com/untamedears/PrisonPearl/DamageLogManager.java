@@ -22,11 +22,11 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-public class DamageLogManager implements Runnable, Listener {
-	private PrisonPearlPlugin plugin;
+class DamageLogManager implements Runnable, Listener {
+	private final PrisonPearlPlugin plugin;
 
 	private boolean scheduled;
-	private Map<String, DamageLog> logs;
+	private final Map<String, DamageLog> logs;
 	
 	public DamageLogManager(PrisonPearlPlugin plugin) {
 		this.plugin = plugin;

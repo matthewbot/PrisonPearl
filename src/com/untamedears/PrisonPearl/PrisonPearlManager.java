@@ -35,9 +35,9 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
-public class PrisonPearlManager implements Listener {
-	private PrisonPearlPlugin plugin;
-	private PrisonPearlStorage pearls;
+class PrisonPearlManager implements Listener {
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
 	
 	public PrisonPearlManager(PrisonPearlPlugin plugin, PrisonPearlStorage pearls) {
 		this.plugin = plugin;
@@ -50,6 +50,16 @@ public class PrisonPearlManager implements Listener {
 		return imprisonPlayer(imprisoned.getName(), imprisoner);
 	}
 	
+	/**
+	 * @param imprisonedname
+	 * @param imprisoner
+	 * @return
+	 */
+	/**
+	 * @param imprisonedname
+	 * @param imprisoner
+	 * @return
+	 */
 	public boolean imprisonPlayer(String imprisonedname, Player imprisoner) {
 		World respawnworld = Bukkit.getWorld(getConfig().getString("free_world"));
 		
@@ -78,6 +88,7 @@ public class PrisonPearlManager implements Listener {
 		}
 		
 		int pearlnum;
+		ItemStack dropStack = null;
 		if (stacknum == -1) { // no pearl (admin command)
 			pearlnum = inv.firstEmpty(); // give him a new one at the first empty slot
 		} else if (stack.getAmount() == 1) { // if he's just got one pearl
@@ -88,8 +99,15 @@ public class PrisonPearlManager implements Listener {
 				stack.setAmount(stack.getAmount()-1); // and reduce his stack of pearls by one
 				inv.setItem(stacknum, stack);
 			} else { // no empty slot?
+				dropStack = new ItemStack(Material.ENDER_PEARL, stack.getAmount()-1);
 				pearlnum = stacknum; // then overwrite his stack of pearls
 			}
+		}
+		
+		//drop pearls that otherwise would be deleted
+		if (dropStack != null) {
+			imprisoner.getWorld().dropItem(imprisoner.getLocation(), dropStack);
+			Bukkit.getLogger().info(imprisoner.getLocation()+", "+dropStack.getAmount());
 		}
 	
 		PrisonPearl pp = pearls.newPearl(imprisonedname, imprisoner); // create the prison pearl		
@@ -110,11 +128,9 @@ public class PrisonPearlManager implements Listener {
 	
 	public boolean freePlayer(Player player) {
 		PrisonPearl pp = pearls.getByImprisoned(player);
-		if (pp == null)
-			return false;
-		
-		return freePearl(pp);
-	}
+        return pp != null && freePearl(pp);
+
+    }
 	
 	public boolean freePearl(PrisonPearl pp) {
 		pearls.deletePearl(pp);

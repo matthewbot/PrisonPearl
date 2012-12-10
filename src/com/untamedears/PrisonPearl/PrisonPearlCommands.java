@@ -13,13 +13,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-public class PrisonPearlCommands implements CommandExecutor {
-	private PrisonPearlPlugin plugin;
-	private PrisonPearlStorage pearls;
-	private DamageLogManager damageman;
-	private PrisonPearlManager pearlman;
-	private SummonManager summonman;
-	private BroadcastManager broadcastman;
+class PrisonPearlCommands implements CommandExecutor {
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
+	private final DamageLogManager damageman;
+	private final PrisonPearlManager pearlman;
+	private final SummonManager summonman;
+	private final BroadcastManager broadcastman;
 	
 	public PrisonPearlCommands(PrisonPearlPlugin plugin, DamageLogManager damageman, PrisonPearlStorage pearls, PrisonPearlManager pearlman, SummonManager summonman, BroadcastManager broadcastman) {
 		this.plugin = plugin;
@@ -56,12 +56,166 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return confirmCmd(sender, args);
 		} else if (label.equalsIgnoreCase("ppsilence")) {
 			return silenceCmd(sender, args);
-		}
+		} else if (label.equalsIgnoreCase("pploadalts")) {
+			return reloadAlts(sender);
+		} else if (label.equalsIgnoreCase("ppcheckall")) {
+			return checkAll(sender);
+		} else if (label.equalsIgnoreCase("ppcheck")) {
+			return check(sender, args);
+		} else if (label.equalsIgnoreCase("kill")) {
+			return kill();
+		} else if (label.equalsIgnoreCase("ppsetdist")) {
+            return setDistCmd(sender, args);
+        } else if (label.equalsIgnoreCase("ppsetdamage")) {
+            return setDamageCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptogglespeech")) {
+            return toggleSpeechCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptoggledamage")) {
+            return toggleDamageCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptoggleblocks")) {
+            return toggleBlocksCmd(sender, args);
+        } else if (label.equalsIgnoreCase("ppsetmotd")) {
+            return setMotdCmd(sender, args);
+        }
 
 		return false;
 	}
-	
-	private boolean locateCmd(CommandSender sender, String args[], boolean any) {
+
+    private PrisonPearl setCmd(CommandSender sender, String[] args) {
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return null;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null){
+            return null;
+        }
+
+        if (args.length > 1)
+            return null;
+
+        if (pp.getImprisonedPlayer().isDead()) {
+            sender.sendMessage(pp.getImprisonedName() + " is dead. Bring him back to try again.");
+            return null;
+        } else if (pp.getImprisonedPlayer() == player) {
+            sender.sendMessage("You cannot alter your own pearl!");
+            return null;
+        } else if (!(summonman.isSummoned(pp))) {
+            sender.sendMessage(pp.getImprisonedName() + " is not summoned.");
+            return null;
+        }
+
+        return pp;
+    }
+
+    @SuppressWarnings("SameReturnValue")
+    private boolean setDistCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        summonman.getSummon(pp.getImprisonedName()).setAllowedDistance(Integer.parseInt(args[0]));
+        sender.sendMessage(pp.getImprisonedName() + "'s allowed distance set to " + args[0]);
+        return true;
+    }
+
+    private boolean setDamageCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        summonman.getSummon(pp.getImprisonedName()).setDamageAmount(Integer.parseInt(args[0]));
+        sender.sendMessage(pp.getImprisonedName() + "'s damage amount set to " + args[0]);
+        return true;
+    }
+
+    private boolean toggleSpeechCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        boolean speak = summonman.getSummon(pp.getImprisonedName()).isCanSpeak();
+        summonman.getSummon(pp.getImprisonedName()).setCanSpeak(!speak);
+        sender.sendMessage(pp.getImprisonedName() + " ability to speak set to " + !speak);
+        return true;
+    }
+
+    private boolean toggleDamageCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        boolean damage = summonman.getSummon(pp.getImprisonedName()).isCanDealDamage();
+        summonman.getSummon(pp.getImprisonedName()).setCanDealDamage(!damage);
+        sender.sendMessage(pp.getImprisonedName() + " ability to deal damage set to " + !damage);
+        return true;
+    }
+
+    private boolean toggleBlocksCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        boolean block = summonman.getSummon(pp.getImprisonedName()).isCanBreakBlocks();
+        summonman.getSummon(pp.getImprisonedName()).setCanBreakBlocks(!block);
+        sender.sendMessage(pp.getImprisonedName() + " ability to break blocks set to " + !block);
+        return true;
+    }
+
+    private boolean setMotdCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return true;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        String s = "";
+        for (String arg : args) {
+            s = s.concat(arg + " ");
+        }
+        pp.setMotd(s);
+        sender.sendMessage(pp.getImprisonedName() + "'s Message of the Day set to " + s);
+        return true;
+    }
+
+    private boolean locateCmd(CommandSender sender, String args[], boolean any) {
 		String name_is;
 		String name_possesive;
 		PrisonPearl pp;
@@ -164,7 +318,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 	}
 	
 	private boolean summonCmd(CommandSender sender, String args[]) {
-		if (args.length > 2)
+		if (args.length > 1)
 			return false;
 		
 		if (!(sender instanceof Player)) {
@@ -173,22 +327,13 @@ public class PrisonPearlCommands implements CommandExecutor {
 		}
 		Player player = (Player)sender;
 		
-		int dist = plugin.getConfig().getInt("summon_damage_radius");
 		PrisonPearl pp;
-		if (args.length == 2) {
+
+		if (args.length == 1) {
 			try {
-				dist = Integer.parseInt(args[1]);
 				pp = getCommandPearl(player, args, 0);
-			} catch (NumberFormatException e) { 
-				sender.sendMessage("Invalid summon radius '" + args[1] + "'");
-				return false;
-			}
-		} else if (args.length == 1) {
-			try {
-				dist = Integer.parseInt(args[0]);
-				pp = getCommandPearl(player, args, 1);
 			} catch (NumberFormatException e) {
-				pp = getCommandPearl(player, args, 0);
+				pp = getCommandPearl(player, args, 1);
 			}
 		} else {
 			pp = getCommandPearl(player, args, 0);
@@ -196,11 +341,11 @@ public class PrisonPearlCommands implements CommandExecutor {
 		
 		if (pp == null)
 			return true;
-		
-		if (args.length > 0) {
-			try {
-				dist = Integer.parseInt(args[args.length-1]);
-			} catch (NumberFormatException e) { }
+
+		//check if the pearled player is combat tagged
+		if (plugin.isCombatTagged(pp.getImprisonedName())) {
+			sender.sendMessage(ChatColor.RED+"[PrisonPearl]"+ChatColor.WHITE+" You cannot summon a CombatTagged player.");
+			return true;
 		}
 		
 		if (pp.getImprisonedPlayer() == null || pp.getImprisonedPlayer().isDead()) {
@@ -214,7 +359,7 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 			
-		if (summonman.summonPearl(pp, player.getLocation(), dist))
+		if (summonman.summonPearl(pp))
 			sender.sendMessage("You've summoned " + pp.getImprisonedName());
 		else
 			sender.sendMessage("You failed to summon " + pp.getImprisonedName());
@@ -230,10 +375,18 @@ public class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 		
+		
 		Player player = (Player)sender;
+		
 		PrisonPearl pp = getCommandPearl(player, args, 0); 
 		if (pp == null)
 			return true;
+		
+		//check if the pearled player is combat tagged
+		if (plugin.isCombatTagged(pp.getImprisonedName())) {
+			sender.sendMessage(ChatColor.RED+"[PrisonPearl]"+ChatColor.WHITE+" You cannot return a CombatTagged player.");
+			return true;
+		}
 		
 		if (pp.getImprisonedName().equals(player.getName())) {
 			sender.sendMessage("You cannot return yourself!");
@@ -416,5 +569,42 @@ public class PrisonPearlCommands implements CommandExecutor {
 			player.sendMessage("You don't possess " + args[0] + "'s prison pearl");
 			return -1;
 		}
+	}
+	
+	private boolean reloadAlts(CommandSender sender) {
+		if (!(sender instanceof Player)) {
+			plugin.loadAlts();
+			plugin.checkBanAllAlts();
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean checkAll(CommandSender sender) {
+		if (!(sender instanceof Player)) {
+			plugin.checkBanAllAlts();
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean check(CommandSender sender, String[] args) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			boolean isBanned = plugin.isTempBanned(args[0]);
+			if (isBanned) {
+				sender.sendMessage(args[0]+" is temp banned for having "+plugin.getImprisonedCount(args[0])+" imprisoned accounts: "+plugin.getImprisonedAltsString(args[0]));
+			} else {
+				sender.sendMessage(args[0]+" is not temp banned");
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	@SuppressWarnings("SameReturnValue")
+    private boolean kill() {
+		return false;
 	}
 }
