@@ -326,7 +326,7 @@ class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 		Player player = (Player)sender;
-
+		
 		PrisonPearl pp;
 
 		if (args.length == 1) {
@@ -341,6 +341,12 @@ class PrisonPearlCommands implements CommandExecutor {
 		
 		if (pp == null)
 			return true;
+
+		//check if the pearled player is combat tagged
+		if (plugin.isCombatTagged(pp.getImprisonedName())) {
+			sender.sendMessage(ChatColor.RED+"[PrisonPearl]"+ChatColor.WHITE+" You cannot summon a CombatTagged player.");
+			return true;
+		}
 		
 		if (pp.getImprisonedPlayer() == null || pp.getImprisonedPlayer().isDead()) {
 			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
@@ -369,10 +375,18 @@ class PrisonPearlCommands implements CommandExecutor {
 			return true;
 		}
 		
+		
 		Player player = (Player)sender;
+		
 		PrisonPearl pp = getCommandPearl(player, args, 0); 
 		if (pp == null)
 			return true;
+		
+		//check if the pearled player is combat tagged
+		if (plugin.isCombatTagged(pp.getImprisonedName())) {
+			sender.sendMessage(ChatColor.RED+"[PrisonPearl]"+ChatColor.WHITE+" You cannot return a CombatTagged player.");
+			return true;
+		}
 		
 		if (pp.getImprisonedName().equals(player.getName())) {
 			sender.sendMessage("You cannot return yourself!");

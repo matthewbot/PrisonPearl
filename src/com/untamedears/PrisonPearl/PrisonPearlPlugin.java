@@ -531,6 +531,13 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
             event.setCancelled(true);
         }
     }
+    
+    public boolean isCombatTagged(String playerName) {
+    	if (combatTagManager != null) {
+    		return combatTagManager.isCombatTagged(playerName);
+    	}
+    	return false;
+    }
 	
 	public void loadAlts() {
 		if (altsList == null) {

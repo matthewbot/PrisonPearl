@@ -25,9 +25,13 @@ class CombatTagManager {
         return combatTagEnabled && combatTagApi != null && combatTagApi.isNPC(player);
     }
 	
-	public boolean isCombatTaged(Player player) {
+	public boolean isCombatTagged(Player player) {
         return combatTagEnabled && combatTagApi != null && combatTagApi.isInCombat(player);
     }
+	
+	public boolean isCombatTagged(String playerName) {
+		return combatTagEnabled && combatTagApi != null && combatTagApi.isInCombat(playerName);
+	}
 	
 	public String getNPCPlayerName(Entity player) {
 		if (combatTagEnabled && combatTagApi != null) {
