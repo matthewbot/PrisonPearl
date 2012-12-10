@@ -285,8 +285,13 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		
 		PrisonPearl pp = pearls.getByImprisoned(playerName); // find out if the player is imprisoned
 		if (pp != null) { // if imprisoned
-			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) // bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
+			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) {// bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
+				// reveal location of pearl to damaging players if pearl stealing is disabled
+				for (Player damager : damageman.getDamagers(player)) {
+					damager.sendMessage(ChatColor.GREEN+"[PrisonPearl] "+pp.getImprisonedName()+" cannot be pearled here because they are already "+pp.describeLocation());
+				}
 				return;
+			}
 		}
 		
 		for (Player damager : damageman.getDamagers(player)) { // check to see if anyone can imprison him
