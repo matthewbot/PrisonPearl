@@ -88,6 +88,7 @@ class PrisonPearlManager implements Listener {
 		}
 		
 		int pearlnum;
+		ItemStack dropStack = null;
 		if (stacknum == -1) { // no pearl (admin command)
 			pearlnum = inv.firstEmpty(); // give him a new one at the first empty slot
 		} else if (stack.getAmount() == 1) { // if he's just got one pearl
@@ -98,10 +99,15 @@ class PrisonPearlManager implements Listener {
 				stack.setAmount(stack.getAmount()-1); // and reduce his stack of pearls by one
 				inv.setItem(stacknum, stack);
 			} else { // no empty slot?
-				ItemStack newStack = new ItemStack(Material.ENDER_PEARL, stack.getAmount()-1);
-				imprisoner.getWorld().dropItem(imprisoner.getLocation(), newStack);
+				dropStack = new ItemStack(Material.ENDER_PEARL, stack.getAmount()-1);
 				pearlnum = stacknum; // then overwrite his stack of pearls
 			}
+		}
+		
+		//drop pearls that otherwise would be deleted
+		if (dropStack != null) {
+			imprisoner.getWorld().dropItem(imprisoner.getLocation(), dropStack);
+			Bukkit.getLogger().info(imprisoner.getLocation()+", "+dropStack.getAmount());
 		}
 	
 		PrisonPearl pp = pearls.newPearl(imprisonedname, imprisoner); // create the prison pearl		
