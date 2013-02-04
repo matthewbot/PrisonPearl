@@ -1,265 +1,621 @@
 package com.untamedears.PrisonPearl;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.BrewingStand;
-import org.bukkit.block.Chest;
-import org.bukkit.block.Dispenser;
-import org.bukkit.block.Furnace;
-import org.bukkit.inventory.DoubleChestInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-public class PrisonPearlStorage implements SaveLoad {
-	private final Map<Short, PrisonPearl> pearls_byid;
-	private final Map<String, PrisonPearl> pearls_byimprisoned;
-	private short nextid;
+class PrisonPearlCommands implements CommandExecutor {
+	private final PrisonPearlPlugin plugin;
+	private final PrisonPearlStorage pearls;
+	private final DamageLogManager damageman;
+	private final PrisonPearlManager pearlman;
+	private final SummonManager summonman;
+	private final BroadcastManager broadcastman;
 	
-	private boolean dirty;
-	
-	public PrisonPearlStorage() {
-		pearls_byid = new HashMap<Short, PrisonPearl>();
-		pearls_byimprisoned = new HashMap<String, PrisonPearl>();
-		nextid = 1;
+	public PrisonPearlCommands(PrisonPearlPlugin plugin, DamageLogManager damageman, PrisonPearlStorage pearls, PrisonPearlManager pearlman, SummonManager summonman, BroadcastManager broadcastman) {
+		this.plugin = plugin;
+		this.pearls = pearls;
+		this.damageman = damageman;
+		this.pearlman = pearlman;
+		this.summonman = summonman;
+		this.broadcastman = broadcastman;
 	}
 	
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void markDirty() {
-		dirty = true;
+	@Override
+	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		if (label.equalsIgnoreCase("pplocate") || label.equalsIgnoreCase("ppl")) {
+			return locateCmd(sender, args, false);
+		} else if (label.equalsIgnoreCase("pplocateany")) {
+			return locateCmd(sender, args, true);
+		} else if (label.equalsIgnoreCase("ppfree") || label.equalsIgnoreCase("ppf")) {
+			return freeCmd(sender, args, false);
+		} else if (label.equalsIgnoreCase("ppfreeany")) {
+			return freeCmd(sender, args, true);
+		} else if (label.equalsIgnoreCase("ppsummon") || label.equalsIgnoreCase("pps")) {
+			return summonCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppreturn") || label.equalsIgnoreCase("ppr")) {
+			return returnCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppkill") || label.equalsIgnoreCase("ppk")) {
+			return killCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppsave")) {
+			return saveCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppimprisonany")) {
+			return imprisonCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppbroadcast")) {
+			return broadcastCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppconfirm")) {
+			return confirmCmd(sender, args);
+		} else if (label.equalsIgnoreCase("ppsilence")) {
+			return silenceCmd(sender, args);
+		} else if (label.equalsIgnoreCase("pploadalts")) {
+			return reloadAlts(sender);
+		} else if (label.equalsIgnoreCase("ppcheckall")) {
+			return checkAll(sender);
+		} else if (label.equalsIgnoreCase("ppcheck")) {
+			return check(sender, args);
+		} else if (label.equalsIgnoreCase("kill")) {
+			return kill();
+		} else if (label.equalsIgnoreCase("ppsetdist")) {
+            return setDistCmd(sender, args);
+        } else if (label.equalsIgnoreCase("ppsetdamage")) {
+            return setDamageCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptogglespeech")) {
+            return toggleSpeechCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptoggledamage")) {
+            return toggleDamageCmd(sender, args);
+        } else if (label.equalsIgnoreCase("pptoggleblocks")) {
+            return toggleBlocksCmd(sender, args);
+        } else if (label.equalsIgnoreCase("ppsetmotd")) {
+            return setMotdCmd(sender, args);           
+        } else if (label.equalsIgnoreCase("ppfeed")) {
+			return feedCmd(sender, args, false);
+        }
+		return false;
 	}
 
-	public void load(File file) throws IOException {
-		FileInputStream fis = new FileInputStream(file);
-		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+    private boolean feedCmd(CommandSender sender, String args[], boolean any) {
+    	if ((sender instanceof Player)) {
+			sender.sendMessage("Must use ppfeed at the console");
+			return true;
+		}
+    	sender.sendMessage("Feeding all pearls: " + pearls.getPearlCount());
+    	sender.sendMessage(pearls.feedPearls(pearlman));
+    	return true;
+    }
+	
+    private PrisonPearl setCmd(CommandSender sender, String[] args) {
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return null;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null){
+            return null;
+        }
+
+        if (args.length > 1)
+            return null;
+
+        if (pp.getImprisonedPlayer().isDead()) {
+            sender.sendMessage(pp.getImprisonedName() + " is dead. Bring him back to try again.");
+            return null;
+        } else if (pp.getImprisonedPlayer() == player) {
+            sender.sendMessage("You cannot alter your own pearl!");
+            return null;
+        } else if (!(summonman.isSummoned(pp))) {
+            sender.sendMessage(pp.getImprisonedName() + " is not summoned.");
+            return null;
+        }
+
+        return pp;
+    }
+
+    @SuppressWarnings("SameReturnValue")
+    private boolean setDistCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        summonman.getSummon(pp.getImprisonedName()).setAllowedDistance(Integer.parseInt(args[0]));
+        sender.sendMessage(pp.getImprisonedName() + "'s allowed distance set to " + args[0]);
+        return true;
+    }
+
+    private boolean setDamageCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        summonman.getSummon(pp.getImprisonedName()).setDamageAmount(Integer.parseInt(args[0]));
+        sender.sendMessage(pp.getImprisonedName() + "'s damage amount set to " + args[0]);
+        return true;
+    }
+
+    private boolean toggleSpeechCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        boolean speak = summonman.getSummon(pp.getImprisonedName()).isCanSpeak();
+        summonman.getSummon(pp.getImprisonedName()).setCanSpeak(!speak);
+        sender.sendMessage(pp.getImprisonedName() + " ability to speak set to " + !speak);
+        return true;
+    }
+
+    private boolean toggleDamageCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        boolean damage = summonman.getSummon(pp.getImprisonedName()).isCanDealDamage();
+        summonman.getSummon(pp.getImprisonedName()).setCanDealDamage(!damage);
+        sender.sendMessage(pp.getImprisonedName() + " ability to deal damage set to " + !damage);
+        return true;
+    }
+
+    private boolean toggleBlocksCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp = setCmd(sender, args);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        boolean block = summonman.getSummon(pp.getImprisonedName()).isCanBreakBlocks();
+        summonman.getSummon(pp.getImprisonedName()).setCanBreakBlocks(!block);
+        sender.sendMessage(pp.getImprisonedName() + " ability to break blocks set to " + !block);
+        return true;
+    }
+
+    private boolean setMotdCmd(CommandSender sender, String args[]) {
+
+        PrisonPearl pp;
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("ppset cannot be used at the console");
+            return true;
+        }
+
+        String[] anArray = {};
+        Player player = (Player)sender;
+        pp = getCommandPearl(player, anArray, 1);
+
+        if (pp == null) {
+
+            return false;
+        }
+
+        String s = "";
+        for (String arg : args) {
+            s = s.concat(arg + " ");
+        }
+        pp.setMotd(s);
+        sender.sendMessage(pp.getImprisonedName() + "'s Message of the Day set to " + s);
+        return true;
+    }    
+
+    private boolean locateCmd(CommandSender sender, String args[], boolean any) {
+		String name_is;
+		String name_possesive;
+		PrisonPearl pp;
 		
-		nextid = Short.parseShort(br.readLine());
+		if (!any) {
+			if (args.length != 0)
+				return false;
+			
+			if (!(sender instanceof Player)) {
+				sender.sendMessage("Must use pplocateany at the console");
+				return true;
+			}
+				
+			name_is = "You are";
+			name_possesive = "Your";
+			pp = pearls.getByImprisoned((Player)sender);
+		} else {
+			if (args.length != 1)
+				return false;
+			
+			name_is = args[0] + " is";
+			name_possesive = args[0] + "'s";
+			pp = pearls.getByImprisoned(args[0]);
+		}
 		
-		String line;
-		while ((line = br.readLine()) != null) {
-			String parts[] = line.split(" ");
-			short id = Short.parseShort(parts[0]);
-			String imprisoned = parts[1];
-			Location loc = new Location(Bukkit.getWorld(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
-            PrisonPearl pp = PrisonPearl.makeFromLocation(id, imprisoned, loc);
-            if (parts.length != 6) {
-                String motd = "";
-                for (int i = 6; i < parts.length; i++) {
-                    motd = motd.concat(parts[i] + " ");
-                }
-                pp.setMotd(motd);
-            }
+		if (pp != null) {
+			if (!pp.verifyLocation()) {
+				System.err.println("PrisonPearl for " + pp.getImprisonedName() + " didn't validate, so is now set free");
+				pearlman.freePearl(pp);
+			} else {
+				sender.sendMessage(ChatColor.GREEN + name_possesive + " prison pearl is " + pp.describeLocation());
+				if (sender instanceof Player && !any)
+					broadcastman.broadcast((Player)sender, ChatColor.GREEN + pp.getImprisonedName() + ": " + pp.describeLocation());
+			}
+		} else {
+			sender.sendMessage(name_is + " not imprisoned");
+		}
+		
+		return true;
+	}
+	
+	private boolean freeCmd(CommandSender sender, String args[], boolean any) {
+		PrisonPearl pp;
+		
+		if (!any) {
+			if (args.length > 1)
+				return false;
+			
+			if (!(sender instanceof Player)) {
+				sender.sendMessage("Must use freeany at console");
+				return true;
+			}
+			
+			Player player = (Player)sender;
+			
+			int slot = getCommandPearlSlot(player, args, 0);
+			if (slot == -1)
+				return true;
+			
+			pp = pearls.getByItemStack(player.getInventory().getItem(slot));
+			player.getInventory().setItem(slot, null);		
+		} else {
+			if (args.length != 1)
+				return false;
+			
+			pp = pearls.getByImprisoned(args[0]);
+			
 			if (pp == null) {
-				System.err.println("PrisonPearl for " + imprisoned + " didn't validate, so is now set free. Chunks and/or prisonpearls.txt are corrupt");
-				continue;
+				sender.sendMessage(args[0] + " is not imprisoned");
+				return true;
 			}
-			
-			addPearl(pp);
 		}
 		
-		fis.close();
-		
-		dirty = false;
+		if (pearlman.freePearl(pp)) {
+			if (pp.getImprisonedPlayer() != sender) // when freeing yourself, you're already going to get a message
+				sender.sendMessage("You've freed " + pp.getImprisonedName());
+		} else {
+			sender.sendMessage("You failed to free " + pp.getImprisonedName());
+		}
+		return true;
 	}
 	
-	public void save(File file) throws IOException {
-		FileOutputStream fos = new FileOutputStream(file);
-		BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fos));
-	
-		br.write(nextid + "\n");
+	private boolean imprisonCmd(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("imprison cannot be used at the console");
+			return true;
+		}
 		
-		for (PrisonPearl pp : pearls_byid.values()) {
-			if (pp.getHolderBlockState() == null)
-				continue;
+		if (pearlman.imprisonPlayer(args[0], (Player)sender)) {
+			sender.sendMessage("You imprisoned " + args[0]);
+			Player player = Bukkit.getPlayerExact(args[0]);
+			if (player != null)
+				player.setHealth(0);
+		} else {
+			sender.sendMessage("You failed to imprison " + args[0]);
+		}
+		return true;
+	}
+	
+	private boolean summonCmd(CommandSender sender, String args[]) {
+		if (args.length > 1)
+			return false;
+		
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		Player player = (Player)sender;
+		
+		PrisonPearl pp;
+
+		if (args.length == 1) {
+			try {
+				pp = getCommandPearl(player, args, 0);
+			} catch (NumberFormatException e) {
+				pp = getCommandPearl(player, args, 1);
+			}
+		} else {
+			pp = getCommandPearl(player, args, 0);
+		}
+		
+		if (pp == null)
+			return true;
+
+		//check if the pearled player is combat tagged
+		if (plugin.isCombatTagged(pp.getImprisonedName())) {
+			sender.sendMessage(ChatColor.RED+"[PrisonPearl]"+ChatColor.WHITE+" You cannot summon a CombatTagged player.");
+			return true;
+		}
+		
+		if (pp.getImprisonedPlayer() == null || pp.getImprisonedPlayer().isDead()) {
+			sender.sendMessage(pp.getImprisonedName() + " cannot be summoned");
+			return true;
+		} else if (pp.getImprisonedPlayer() == player) {
+			sender.sendMessage("You cannot summon yourself!");
+			return true;
+		} else if (summonman.isSummoned(pp)) {
+			sender.sendMessage(pp.getImprisonedName() + " is already summoned");
+			return true;
+		}
 			
-			Location loc = pp.getLocation();
-            br.append(String.valueOf(pp.getID()));
-            br.append(" ");
-            br.append(pp.getImprisonedName());
-            br.append(" ");
-            br.append(loc.getWorld().getName());
-            br.append(" ");
-            br.append(String.valueOf(loc.getBlockX()));
-            br.append(" ");
-            br.append(String.valueOf(loc.getBlockY()));
-            br.append(" ");
-            br.append(String.valueOf(loc.getBlockZ()));
-            br.append(" ");
-            br.append(pp.getMotd());
-            br.append("\n");
-        }
-		
-		br.flush();
-		fos.close();
-		
-		dirty = false;
-	}
-	
-	public PrisonPearl newPearl(Player imprisoned, Player imprisoner) {
-		return newPearl(imprisoned.getName(), imprisoner);
-	}
-	
-	public PrisonPearl newPearl(String imprisonedname, Player imprisoner) {
-		PrisonPearl pp = new PrisonPearl(nextid++, imprisonedname, imprisoner);
-		addPearl(pp);
-		return pp;
-	}
-	
-	public void deletePearl(PrisonPearl pp) {
-		pearls_byid.remove(pp.getID());
-		pearls_byimprisoned.remove(pp.getImprisonedName());
-		dirty = true;
-	}
-	
-	public void addPearl(PrisonPearl pp) {
-		PrisonPearl old = pearls_byimprisoned.get(pp.getImprisonedName());
-		if (old != null)
-			pearls_byid.remove(old.getID());
-		
-		pearls_byid.put(pp.getID(), pp);
-		pearls_byimprisoned.put(pp.getImprisonedName(), pp);
-		dirty = true;
-	}
-	
-	public PrisonPearl getByID(short id) {
-		return pearls_byid.get(id);
-	}
-	
-	public PrisonPearl getByItemStack(ItemStack item) {
-		if (item == null || item.getType() != Material.ENDER_PEARL || item.getDurability() == 0)
-			return null;
+		if (summonman.summonPearl(pp))
+			sender.sendMessage("You've summoned " + pp.getImprisonedName());
 		else
-			return pearls_byid.get(item.getDurability());
+			sender.sendMessage("You failed to summon " + pp.getImprisonedName());
+		return true;		
 	}
 	
-	public PrisonPearl getByImprisoned(String name) {
-		return pearls_byimprisoned.get(name);
-	}
-	
-	public PrisonPearl getByImprisoned(Player player) {
-		return pearls_byimprisoned.get(player.getName());
-	}
-	
-	public Integer getPearlCount(){
-		return pearls_byimprisoned.size();
-	}
-	
-	boolean isImprisoned(String name) {
-		return pearls_byimprisoned.containsKey(name);
-	}
-	
-	boolean isImprisoned(Player player) {
-		return pearls_byimprisoned.containsKey(player.getName());
-	}
-	
-	public Integer getImprisonedCount(String[] names) {
-		Integer count = 0;
-        for (String name : names) {
-            if (pearls_byimprisoned.containsKey(name)) {
-                count++;
-            }
-        }
-		return count;
-	}
-	
-	public String[] getImprisonedNames(String[] names) {
-		List<String> iNames = new ArrayList<String>();
-        for (String name : names) {
-            if (pearls_byimprisoned.containsKey(name)) {
-                iNames.add(name);
-            }
-        }
-		int count = iNames.size();
-		String[] results = new String[count];
-		for (int i = 0; i < count; i++) {
-			results[i] = iNames.get(i);
-		}
-		return results;
-	}
-	
-	public String feedPearls(PrisonPearlManager pearlman){
-		String message = "";
-		ConcurrentHashMap<Short,PrisonPearl> map = new ConcurrentHashMap<Short,PrisonPearl>(pearls_byid);
+	private boolean returnCmd(CommandSender sender, String args[]) {
+		if (args.length > 1)
+			return false;
 		
-		for (PrisonPearl pp : map.values()) {
-			BlockState inherentViolence = pp.getHolderBlockState();
-			Material mat = inherentViolence.getType();
-			Inventory inv[] = new Inventory[2];
-			inv[0] = inv[1] = null;
-			if (inherentViolence == null)
-			{
-				continue;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		
+		Player player = (Player)sender;
+		
+		PrisonPearl pp = getCommandPearl(player, args, 0); 
+		if (pp == null)
+			return true;
+		
+		//check if the pearled player is combat tagged
+		if (plugin.isCombatTagged(pp.getImprisonedName())) {
+			sender.sendMessage(ChatColor.RED+"[PrisonPearl]"+ChatColor.WHITE+" You cannot return a CombatTagged player.");
+			return true;
+		}
+		
+		if (pp.getImprisonedName().equals(player.getName())) {
+			sender.sendMessage("You cannot return yourself!");
+			return true;
+		} else if (!summonman.isSummoned(pp)) {
+			sender.sendMessage(pp.getImprisonedName() + " has not been summoned!");
+			return true;
+		} else if (damageman.hasDamageLog(player)) {
+			sender.sendMessage(pp.getImprisonedName() + " is in combat and cannot be returned!");
+			return true;
+		}
+			
+		if (summonman.returnPearl(pp))
+			sender.sendMessage("You've returned " + pp.getImprisonedName());
+		else
+			sender.sendMessage("You failed to return " + pp.getImprisonedName());
+		return true;		
+	}
+	
+	private boolean killCmd(CommandSender sender, String args[]) {
+		if (args.length > 1)
+			return false;
+		
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		PrisonPearl pp = getCommandPearl(player, args, 0);
+		if (pp == null)
+			return true;
+	
+		if (!summonman.isSummoned(pp)) {
+			sender.sendMessage(pp.getImprisonedName() + " has not been summoned!");
+			return true;
+		}
+		
+		if (summonman.killPearl(pp))
+			sender.sendMessage("You've killed " + pp.getImprisonedName());
+		else
+			sender.sendMessage("You failed to kill " + pp.getImprisonedName());
+		return true;		
+	}
+	
+	private boolean saveCmd(CommandSender sender, String args[]) {
+		if (args.length > 0)
+			return false;
+		
+		try {
+			plugin.saveAll(true);
+			sender.sendMessage("PrisonPearl data saved!");
+			return true;
+		} catch (RuntimeException e) {
+			if (!(sender instanceof ConsoleCommandSender))
+				sender.sendMessage("PrisonPearl failed to save data! Check server logs!");
+			throw e;
+		}
+	}
+	
+	private boolean broadcastCmd(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		Player receiver = Bukkit.getPlayerExact(args[0]);
+		if (receiver == null) {
+			sender.sendMessage("No such player " + args[0]);
+			return true;
+		} else if (receiver == player) {
+			sender.sendMessage("You cannot broadcast to yourself!");
+			return true;
+		} else if (!pearls.isImprisoned(player)) {
+			sender.sendMessage("You are not imprisoned!");
+			return true;
+		}
+		
+		if (broadcastman.addBroadcast(player, receiver)) {
+			sender.sendMessage("You will broadcast pplocate information to " + receiver.getDisplayName());
+			receiver.sendMessage("Type /ppconfirm to receive pplocate broadcasts from " + player.getDisplayName());
+		} else {
+			sender.sendMessage("You are already broadcasting to " + receiver.getDisplayName());
+		}
+		
+		return true;
+	}
+	
+	private boolean confirmCmd(CommandSender sender, String args[]) {
+		if (args.length > 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		Player broadcaster;
+		
+		if (args.length == 1) {
+			broadcaster = Bukkit.getPlayerExact(args[0]);
+			if (broadcaster == null) {
+				sender.sendMessage("No such player " + args[0]);
+				return true;
 			}
-			else if (mat == Material.CHEST || mat == Material.LOCKED_CHEST){
-				Chest c = ((Chest)inherentViolence);
-				DoubleChestInventory dblInv = null;
-				try{
-					dblInv = (DoubleChestInventory)c.getInventory();
-					inv[0] = dblInv.getLeftSide();
-					inv[1] = dblInv.getRightSide();
-				}
-				catch(Exception e){
-					inv[0] = (Inventory)c.getInventory();
-				}
+		} else {
+			broadcaster = broadcastman.getQuickConfirmPlayer(player);
+			if (broadcaster == null) {
+				sender.sendMessage("Nobody has requested to broadcast to you");
+				return true;
 			}
-			else if (mat == Material.FURNACE){
-				Furnace f = ((Furnace)inherentViolence);
-				inv[0] = f.getInventory();
-			}
-			else if (mat == Material.DISPENSER)
-			{
-				Dispenser d = ((Dispenser)inherentViolence);
-				inv[0] = d.getInventory();
-			}
-			else if (mat == Material.BREWING_STAND) 
-			{
-				BrewingStand b = ((BrewingStand)inherentViolence);
-				inv[0] = b.getInventory();
-			}
-			else
-			{
-				pearlman.freePearl(pp);
-				continue;
+		}
+		
+		if (broadcastman.confirmBroadcast(broadcaster, player)) {
+			player.sendMessage("You will now receive broadcasts from " + broadcaster.getDisplayName());
+		} else {
+			player.sendMessage(broadcaster.getDisplayName() + " does not wish to broadcast to you");
+		}
+		return true;
+	}
+	
+	private boolean silenceCmd(CommandSender sender, String args[]) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Command cannot be used at console");
+			return true;
+		}
+		
+		Player player = (Player)sender;
+		Player broadcaster = Bukkit.getPlayerExact(args[0]);
+		if (broadcaster == null) {
+			sender.sendMessage("No such player " + args[0]);
+			return true;
+		}
+		
+		if (broadcastman.silenceBroadcast(player, broadcaster)) {
+			player.sendMessage("You will no longer receive broadcasts from " + broadcaster.getDisplayName());
+		} else {
+			player.sendMessage(broadcaster.getDisplayName() + " is not broadcasting to you");
+		}
+		return true;
+	}
+	
+	private PrisonPearl getCommandPearl(Player player, String args[], int pos) {
+		int slot = getCommandPearlSlot(player, args, pos);
+		if (slot != -1)
+			return pearls.getByItemStack(player.getInventory().getItem(slot));
+		else
+			return null;
+	}
+	
+	private int getCommandPearlSlot(Player player, String args[], int pos) {
+		if (args.length <= pos) {
+			ItemStack item = player.getItemInHand();
+			if (item.getType() != Material.ENDER_PEARL) {
+				player.sendMessage("You must hold a pearl or supply the player's name to use this command");
+				return -1;
 			}
 			
-			message = message + " Pearl #" + pp.getID() + ", Name: " + pp.getImprisonedName() + " in a " + pp.getHolderBlockState().getType();
-			int requirementSize = 8;
-			ItemStack requirement = new ItemStack(Material.COAL, requirementSize);
-			if(inv[0].containsAtLeast(requirement,requirementSize))
-			{
-				message = message + "\n Chest contains enough purestrain coal.";
-				inv[0].removeItem(requirement);
+			if (pearls.getByItemStack(item) == null) {
+				player.sendMessage("This is an ordinary ender pearl");
+				return -1;
 			}
-			else if(inv[1] != null && inv[1].containsAtLeast(requirement,requirementSize)){
-				message = message + "\n Chest contains enough purestrain coal.";
-				inv[1].removeItem(requirement);
+			
+			return player.getInventory().getHeldItemSlot();
+		} else {		
+			PrisonPearl pp = pearls.getByImprisoned(args[pos]);
+			if (pp != null) {
+				Inventory inv = player.getInventory();
+				for (Entry<Integer, ? extends ItemStack> entry : inv.all(Material.ENDER_PEARL).entrySet()) {
+					if (entry.getValue().getDurability() == pp.getID())
+						return entry.getKey();
+				}
 			}
-			else {
-				message = message + "\n Chest does not contain enough purestrain coal.";
-				pearlman.freePearl(pp);
-			}
+			
+			player.sendMessage("You don't possess " + args[0] + "'s prison pearl");
+			return -1;
 		}
-		return message;
+	}
+	
+	private boolean reloadAlts(CommandSender sender) {
+		if (!(sender instanceof Player)) {
+			plugin.loadAlts();
+			plugin.checkBanAllAlts();
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean checkAll(CommandSender sender) {
+		if (!(sender instanceof Player)) {
+			plugin.checkBanAllAlts();
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean check(CommandSender sender, String[] args) {
+		if (args.length != 1)
+			return false;
+		if (!(sender instanceof Player)) {
+			boolean isBanned = plugin.isTempBanned(args[0]);
+			if (isBanned) {
+				sender.sendMessage(args[0]+" is temp banned for having "+plugin.getImprisonedCount(args[0])+" imprisoned accounts: "+plugin.getImprisonedAltsString(args[0]));
+			} else {
+				sender.sendMessage(args[0]+" is not temp banned");
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	@SuppressWarnings("SameReturnValue")
+    private boolean kill() {
+		return false;
 	}
 }
